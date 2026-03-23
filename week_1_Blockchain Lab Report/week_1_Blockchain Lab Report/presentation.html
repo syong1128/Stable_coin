@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 1 - 과제 코드 설명</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Fira+Code:wght@400;500;600&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* 슬라이드 컨테이너 */
+    .slide-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 100px;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* 슬라이드 번호 */
+    .slide-number {
+      position: fixed;
+      bottom: 30px;
+      right: 50px;
+      font-size: 14px;
+      color: #555;
+      font-family: 'Fira Code', monospace;
+      z-index: 100;
+    }
+
+    /* 진행 바 */
+    .progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      transition: width 0.4s ease;
+      z-index: 100;
+    }
+
+    /* 타이틀 슬라이드 */
+    .slide-title {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .slide-title h1 {
+      font-size: 52px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+
+    .slide-title .subtitle {
+      font-size: 22px;
+      color: #888;
+      font-weight: 300;
+    }
+
+    .slide-title .meta {
+      margin-top: 40px;
+      font-size: 16px;
+      color: #555;
+    }
+
+    /* 일반 슬라이드 */
+    h2 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 36px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    h2 .badge {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    h3 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #a78bfa;
+      margin-bottom: 12px;
+      margin-top: 20px;
+    }
+
+    p, li {
+      font-size: 20px;
+      line-height: 1.7;
+      color: #ccc;
+    }
+
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    ul li {
+      padding: 6px 0;
+      padding-left: 24px;
+      position: relative;
+    }
+
+    ul li::before {
+      content: '>';
+      position: absolute;
+      left: 0;
+      color: #3b82f6;
+      font-family: 'Fira Code', monospace;
+      font-weight: 600;
+    }
+
+    /* 코드 블록 */
+    .code-block {
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin: 16px 0;
+      font-family: 'Fira Code', monospace;
+      font-size: 16px;
+      line-height: 1.7;
+      overflow-x: auto;
+      position: relative;
+    }
+
+    .code-block .lang-tag {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .code-block .line-num {
+      color: #444;
+      margin-right: 20px;
+      user-select: none;
+      display: inline-block;
+      width: 24px;
+      text-align: right;
+    }
+
+    /* 코드 하이라이트 색상 */
+    .kw { color: #c792ea; }       /* keyword: const, let, async, function, if, for */
+    .fn { color: #82aaff; }       /* function name */
+    .str { color: #c3e88d; }      /* string */
+    .cm { color: #546e7a; }       /* comment */
+    .num { color: #f78c6c; }      /* number */
+    .op { color: #89ddff; }       /* operator */
+    .pr { color: #f07178; }       /* property */
+    .hl { background: rgba(59, 130, 246, 0.12); display: block; margin: 0 -28px; padding: 0 28px; border-left: 3px solid #3b82f6; }
+
+    /* 레이아웃 */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    .flow-box {
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 10px 0;
+    }
+
+    .flow-box h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #60a5fa;
+      margin-bottom: 8px;
+    }
+
+    .flow-box p {
+      font-size: 16px;
+      color: #999;
+    }
+
+    /* 화살표 연결 */
+    .flow-arrow {
+      text-align: center;
+      font-size: 24px;
+      color: #3b82f6;
+      margin: 4px 0;
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* 강조 박스 */
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 16px 0;
+    }
+
+    .highlight-box p {
+      color: #a5b4fc;
+      font-size: 18px;
+    }
+
+    .warn-box {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 16px 0;
+    }
+
+    .warn-box p {
+      color: #fbbf24;
+      font-size: 18px;
+    }
+
+    /* 테이블 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+
+    th {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      font-weight: 600;
+      padding: 12px 20px;
+      text-align: left;
+      font-size: 16px;
+    }
+
+    td {
+      padding: 12px 20px;
+      border-bottom: 1px solid #222;
+      font-size: 16px;
+      color: #bbb;
+    }
+
+    tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    /* 키보드 네비게이션 안내 */
+    .nav-hint {
+      position: fixed;
+      bottom: 28px;
+      left: 50px;
+      font-size: 13px;
+      color: #444;
+      font-family: 'Fira Code', monospace;
+      z-index: 100;
+    }
+
+    kbd {
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: 'Fira Code', monospace;
+      font-size: 12px;
+      color: #888;
+    }
+
+    .tag-green {
+      display: inline-block;
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      font-size: 14px;
+      padding: 2px 10px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .tag-red {
+      display: inline-block;
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      font-size: 14px;
+      padding: 2px 10px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .tag-blue {
+      display: inline-block;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      font-size: 14px;
+      padding: 2px 10px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .big-num {
+      font-size: 64px;
+      font-weight: 900;
+      font-family: 'Fira Code', monospace;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .section-slide {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .section-slide h2 {
+      font-size: 48px;
+      justify-content: center;
+    }
+
+    .section-slide p {
+      font-size: 22px;
+      color: #666;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <div class="slide-number" id="slideNumber"></div>
+  <div class="nav-hint"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> 또는 <kbd>Space</kbd> 로 이동</div>
+
+  <div class="slide-container">
+
+    <!-- ==================== 슬라이드 1: 표지 ==================== -->
+    <div class="slide slide-title active">
+      <h1>Week 1 과제 코드 리뷰</h1>
+      <p class="subtitle">CoinGecko API로 Bitcoin & Ethereum 실시간 가격 추적기 만들기</p>
+      <p class="meta">Blockchain Lab #1 &nbsp;|&nbsp; 국민대학교 &nbsp;|&nbsp; 2026.03.03</p>
+    </div>
+
+    <!-- ==================== 슬라이드 2: 과제 요약 ==================== -->
+    <div class="slide">
+      <h2>과제 요약 <span class="badge">Overview</span></h2>
+      <div class="two-col">
+        <div>
+          <h3>해야 할 것</h3>
+          <ul>
+            <li>GitHub 계정 생성 & 홈페이지 만들기</li>
+            <li>Bitcoin, Ethereum 가격 테이블을 Markdown으로 작성</li>
+            <li>Markdown → HTML 변환 (LLM 활용)</li>
+            <li>CoinGecko API로 <strong style="color:#fff">실시간 자동 갱신</strong> 구현</li>
+          </ul>
+          <div class="highlight-box" style="margin-top: 24px;">
+            <p>핵심: <strong>API 호출 → 데이터 파싱 → 화면 렌더링</strong></p>
+          </div>
+        </div>
+        <div>
+          <h3>사용 기술</h3>
+          <table>
+            <tr><th>영역</th><th>기술</th></tr>
+            <tr><td>구조</td><td>HTML</td></tr>
+            <tr><td>스타일</td><td>Tailwind CSS (CDN)</td></tr>
+            <tr><td>로직</td><td>Vanilla JavaScript</td></tr>
+            <tr><td>API</td><td>CoinGecko (무료, Key 불필요)</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 슬라이드 3: 전체 흐름 ==================== -->
+    <div class="slide">
+      <h2>전체 동작 흐름 <span class="badge">Architecture</span></h2>
+      <div style="max-width: 700px; margin: 0 auto;">
+        <div class="flow-box">
+          <h4>1. 페이지 로드</h4>
+          <p>브라우저가 crypto-prices.html을 열면 <code style="color:#82aaff">fetchPrices()</code> 자동 실행</p>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-box">
+          <h4>2. API 호출</h4>
+          <p>CoinGecko에 GET 요청 → 실패 시 CORS 프록시 3개 순차 시도</p>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-box">
+          <h4>3. 화면 갱신</h4>
+          <p><code style="color:#82aaff">updateTable(data)</code>로 테이블 동적 렌더링</p>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-box">
+          <h4>4. 30초 카운트다운</h4>
+          <p>타이머가 0이 되면 → 다시 1번으로 (무한 반복)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 슬라이드 4: 섹션 - API ==================== -->
+    <div class="slide section-slide">
+      <div class="big-num">01</div>
+      <h2>CoinGecko API</h2>
+      <p>무료 암호화폐 가격 API 이해하기</p>
+    </div>
+
+    <!-- ==================== 슬라이드 5: API URL 분석 ==================== -->
+    <div class="slide">
+      <h2>API 요청 URL 분석 <span class="badge">API</span></h2>
+      <div class="code-block">
+        <span class="lang-tag">HTTP</span>
+<span class="kw">GET</span> <span class="str">https://api.coingecko.com/api/v3/simple/price</span>
+    <span class="op">?</span><span class="pr">ids</span>=<span class="str">bitcoin,ethereum</span>          <span class="cm">// 조회할 코인</span>
+    <span class="op">&</span><span class="pr">vs_currencies</span>=<span class="str">usd,krw</span>       <span class="cm">// 달러 + 원화</span>
+    <span class="op">&</span><span class="pr">include_24hr_change</span>=<span class="str">true</span>  <span class="cm">// 24시간 변동률</span>
+    <span class="op">&</span><span class="pr">include_market_cap</span>=<span class="str">true</span>   <span class="cm">// 시가총액</span>
+      </div>
+      <h3>응답 예시 (JSON)</h3>
+      <div class="code-block">
+        <span class="lang-tag">JSON</span>
+{
+  <span class="pr">"bitcoin"</span>: {
+    <span class="pr">"usd"</span>: <span class="num">66645</span>,
+    <span class="pr">"krw"</span>: <span class="num">98302614</span>,
+    <span class="pr">"usd_24h_change"</span>: <span class="num">0.19</span>,       <span class="cm">// +0.19% 상승</span>
+    <span class="pr">"usd_market_cap"</span>: <span class="num">1334108163262</span>
+  }
+}
+      </div>
+    </div>
+
+    <!-- ==================== 슬라이드 6: 섹션 - 핵심 코드 ==================== -->
+    <div class="slide section-slide">
+      <div class="big-num">02</div>
+      <h2>핵심 코드 분석</h2>
+      <p>crypto-prices.html의 JavaScript 로직</p>
+    </div>
+
+    <!-- ==================== 슬라이드 7: tryFetch ==================== -->
+    <div class="slide">
+      <h2>tryFetch() — API 응답 검증 <span class="badge">Core</span></h2>
+      <div class="code-block">
+        <span class="lang-tag">JavaScript</span>
+<span class="kw">async function</span> <span class="fn">tryFetch</span>(url) {
+  <span class="kw">try</span> {
+<span class="hl">    <span class="kw">const</span> response = <span class="kw">await</span> <span class="fn">fetch</span>(url);          <span class="cm">// 1. HTTP 요청</span></span>
+<span class="hl">    <span class="kw">if</span> (!response.<span class="pr">ok</span>) <span class="kw">return</span> <span class="num">null</span>;             <span class="cm">// 2. 상태코드 확인 (200?)</span></span>
+    <span class="kw">const</span> data = <span class="kw">await</span> response.<span class="fn">json</span>();       <span class="cm">// 3. JSON 파싱</span>
+<span class="hl">    <span class="kw">if</span> (data && data.<span class="pr">bitcoin</span> && data.bitcoin.<span class="pr">usd</span>) <span class="kw">return</span> data;  <span class="cm">// 4. 구조 검증</span></span>
+    <span class="kw">return</span> <span class="num">null</span>;
+  } <span class="kw">catch</span> (e) {
+    <span class="kw">return</span> <span class="num">null</span>;                               <span class="cm">// 네트워크 에러 → null</span>
+  }
+}
+      </div>
+      <div class="highlight-box">
+        <p><strong>포인트:</strong> 2단계 검증 — HTTP 상태코드 확인 + 응답 데이터 구조 확인. 실패하면 <code>null</code> 반환하여 다음 프록시로 넘김</p>
+      </div>
+    </div>
+
+    <!-- ==================== 슬라이드 8: fetchPrices ==================== -->
+    <div class="slide">
+      <h2>fetchPrices() — 폴백 전략 <span class="badge">Core</span></h2>
+      <div class="two-col">
+        <div>
+          <div class="code-block" style="font-size: 15px;">
+            <span class="lang-tag">JavaScript</span>
+<span class="cm">// CORS 프록시 목록</span>
+<span class="kw">const</span> CORS_PROXIES = [
+  (url) <span class="op">=></span> <span class="str">`allorigins.win/...`</span>,
+  (url) <span class="op">=></span> <span class="str">`corsproxy.io/...`</span>,
+  (url) <span class="op">=></span> <span class="str">`codetabs.com/...`</span>,
+];
+
+<span class="kw">async function</span> <span class="fn">fetchPrices</span>() {
+<span class="hl">  <span class="cm">// 1단계: 직접 호출</span></span>
+<span class="hl">  <span class="kw">let</span> data = <span class="kw">await</span> <span class="fn">tryFetch</span>(API_URL);</span>
+
+  <span class="cm">// 2단계: 실패 시 프록시 순회</span>
+<span class="hl">  <span class="kw">if</span> (!data) {</span>
+<span class="hl">    <span class="kw">for</span> (<span class="kw">const</span> proxy <span class="kw">of</span> CORS_PROXIES) {</span>
+<span class="hl">      data = <span class="kw">await</span> <span class="fn">tryFetch</span>(proxy(API_URL));</span>
+<span class="hl">      <span class="kw">if</span> (data) <span class="kw">break</span>;</span>
+<span class="hl">    }</span>
+<span class="hl">  }</span>
+
+  <span class="kw">if</span> (data) <span class="fn">updateTable</span>(data);
+}
+          </div>
+        </div>
+        <div>
+          <h3>왜 프록시가 필요한가?</h3>
+          <ul>
+            <li>브라우저는 <strong style="color:#fff">CORS 정책</strong>으로 다른 도메인 API 호출을 차단</li>
+            <li><code>file://</code>에서 열면 거의 100% 차단됨</li>
+            <li>프록시 서버가 대신 호출 → 브라우저에 전달</li>
+          </ul>
+          <div class="warn-box" style="margin-top: 20px;">
+            <p><strong>참고:</strong> Next.js를 쓰면 서버에서 직접 호출하므로 CORS 문제 자체가 없음</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 슬라이드 9: updateTable ==================== -->
+    <div class="slide">
+      <h2>updateTable() — 테이블 렌더링 <span class="badge">Core</span></h2>
+      <div class="code-block">
+        <span class="lang-tag">JavaScript</span>
+<span class="kw">function</span> <span class="fn">updateTable</span>(data) {
+  <span class="kw">const</span> coins = [
+    { <span class="pr">id</span>: <span class="str">"bitcoin"</span>,  <span class="pr">name</span>: <span class="str">"Bitcoin (BTC)"</span>  },
+    { <span class="pr">id</span>: <span class="str">"ethereum"</span>, <span class="pr">name</span>: <span class="str">"Ethereum (ETH)"</span> },
+  ];
+
+  coins.<span class="fn">forEach</span>((coin) <span class="op">=></span> {
+    <span class="kw">const</span> info = data[coin.<span class="pr">id</span>];           <span class="cm">// data["bitcoin"]</span>
+<span class="hl">    <span class="kw">const</span> change = info.<span class="pr">usd_24h_change</span>;  <span class="cm">// 24시간 변동률</span></span>
+<span class="hl">    <span class="kw">const</span> changeColor = change >= <span class="num">0</span></span>
+<span class="hl">      <span class="op">?</span> <span class="str">"text-green-600"</span>               <span class="cm">// 상승 → 초록</span></span>
+<span class="hl">      <span class="op">:</span> <span class="str">"text-red-600"</span>;                <span class="cm">// 하락 → 빨강</span></span>
+
+    tr.<span class="pr">innerHTML</span> = <span class="str">`...${coin.name}...${info.usd}...`</span>;
+    tbody.<span class="fn">appendChild</span>(tr);              <span class="cm">// DOM에 추가</span>
+  });
+}
+      </div>
+      <div class="highlight-box">
+        <p><strong>포인트:</strong> API 응답의 <code>usd_24h_change</code> 값으로 <span class="tag-green">상승(+)</span> / <span class="tag-red">하락(-)</span> 색상을 동적으로 결정</p>
+      </div>
+    </div>
+
+    <!-- ==================== 슬라이드 10: 카운트다운 ==================== -->
+    <div class="slide">
+      <h2>resetCountdown() — 30초 자동 갱신 <span class="badge">Core</span></h2>
+      <div class="two-col">
+        <div>
+          <div class="code-block" style="font-size: 15px;">
+            <span class="lang-tag">JavaScript</span>
+<span class="kw">const</span> REFRESH_INTERVAL = <span class="num">30</span>;
+
+<span class="kw">function</span> <span class="fn">resetCountdown</span>() {
+  countdown = REFRESH_INTERVAL;
+
+  countdownTimer = <span class="fn">setInterval</span>(() <span class="op">=></span> {
+<span class="hl">    countdown<span class="op">--</span>;  <span class="cm">// 1초마다 감소</span></span>
+
+    <span class="cm">// 프로그레스 바 너비 계산</span>
+<span class="hl">    <span class="kw">const</span> percent =</span>
+<span class="hl">      (countdown / REFRESH_INTERVAL) * <span class="num">100</span>;</span>
+    progressBar.style.<span class="pr">width</span> =
+      percent + <span class="str">"%"</span>;
+
+<span class="hl">    <span class="kw">if</span> (countdown <span class="op"><=</span> <span class="num">0</span>) {</span>
+<span class="hl">      <span class="fn">clearInterval</span>(countdownTimer);</span>
+<span class="hl">      <span class="fn">fetchPrices</span>();  <span class="cm">// 다시 호출!</span></span>
+<span class="hl">    }</span>
+  }, <span class="num">1000</span>);  <span class="cm">// 1000ms = 1초</span>
+}
+          </div>
+        </div>
+        <div>
+          <h3>동작 원리</h3>
+          <ul>
+            <li><code>setInterval</code>로 1초마다 콜백 실행</li>
+            <li>카운트다운 숫자 감소 + 바 너비 줄임</li>
+            <li>0초 도달 → <code>fetchPrices()</code> 재호출</li>
+            <li>이것이 <strong style="color:#fff">30초 자동 갱신 사이클</strong></li>
+          </ul>
+          <h3>프로그레스 바 계산</h3>
+          <table>
+            <tr><th>남은 초</th><th>계산</th><th>너비</th></tr>
+            <tr><td>30</td><td>30/30 * 100</td><td>100%</td></tr>
+            <tr><td>15</td><td>15/30 * 100</td><td>50%</td></tr>
+            <tr><td>0</td><td>0/30 * 100</td><td>0%</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 슬라이드 11: 섹션 ==================== -->
+    <div class="slide section-slide">
+      <div class="big-num">03</div>
+      <h2>실전 이슈</h2>
+      <p>교실에서 겪을 수 있는 문제와 해결법</p>
+    </div>
+
+    <!-- ==================== 슬라이드 12: Rate Limit ==================== -->
+    <div class="slide">
+      <h2>Rate Limit 문제 <span class="badge">Issue</span></h2>
+      <div class="two-col">
+        <div>
+          <h3>왜 교실에서 안 되나?</h3>
+          <div class="code-block" style="font-size: 14px; line-height: 1.8;">
+            <span class="lang-tag">교실 네트워크</span>
+학생A ──┐
+학생B ──┤
+학생C ──┼── <span class="str">교실 Wi-Fi</span> ── <span class="kw">공인 IP 1개</span> ── CoinGecko
+ ...   │
+학생30 ─┘
+
+CoinGecko 입장:
+  <span class="cm">→ "하나의 IP에서 요청 폭주!"</span>
+  <span class="cm">→ HTTP <span class="num">429</span> Too Many Requests</span>
+          </div>
+          <div class="warn-box">
+            <p>30명 x 2회/분 = <strong>분당 60회</strong><br>무료 한도: 분당 10~30회</p>
+          </div>
+        </div>
+        <div>
+          <h3>해결 방법</h3>
+          <table>
+            <tr><th>방법</th><th>난이도</th></tr>
+            <tr><td>갱신 주기 30초 → 120초</td><td><span class="tag-green">쉬움</span></td></tr>
+            <tr><td>CoinGecko Demo Key 발급 (무료)</td><td><span class="tag-green">쉬움</span></td></tr>
+            <tr><td>모바일 핫스팟 사용 (IP 분리)</td><td><span class="tag-green">쉬움</span></td></tr>
+            <tr><td>서버 프록시 + 캐시</td><td><span class="tag-blue">중간</span></td></tr>
+          </table>
+          <div class="highlight-box" style="margin-top: 20px;">
+            <p><strong>Tip:</strong> 에러가 뜨면 1분 정도 기다리면 자동 복구됩니다</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 슬라이드 13: CORS ==================== -->
+    <div class="slide">
+      <h2>CORS란? <span class="badge">Concept</span></h2>
+      <div class="two-col">
+        <div>
+          <h3>CORS (Cross-Origin Resource Sharing)</h3>
+          <ul>
+            <li>브라우저의 <strong style="color:#fff">보안 정책</strong></li>
+            <li>다른 도메인의 API 호출을 기본적으로 <strong style="color:#f87171">차단</strong></li>
+            <li>악성 사이트가 몰래 API를 호출하는 걸 방지</li>
+          </ul>
+          <div class="code-block" style="font-size: 14px; margin-top: 16px;">
+            <span class="lang-tag">차단 예시</span>
+내 페이지: <span class="str">file:///crypto-prices.html</span>
+      ↓ <span class="fn">fetch()</span>
+API서버: <span class="str">https://api.coingecko.com</span>
+      ↓
+브라우저: <span class="pr">"출처가 다르니까 차단!"</span>
+      → <span class="num">CORS Error</span>
+          </div>
+        </div>
+        <div>
+          <h3>이 프로젝트의 해결법</h3>
+          <div class="flow-box">
+            <h4>방법 1: CORS 프록시 (HTML 버전)</h4>
+            <p>중간 서버가 대신 요청 → 서버↔서버는 CORS 제한 없음</p>
+          </div>
+          <div class="flow-box">
+            <h4>방법 2: 서버 사이드 호출 (Next.js 버전)</h4>
+            <p>Route Handler (<code>/api/prices</code>)에서 서버가 직접 호출 → CORS 문제 자체가 없음</p>
+          </div>
+          <div class="highlight-box" style="margin-top: 16px;">
+            <p><strong>결론:</strong> CORS는 브라우저에서만 발생. 서버에서 호출하면 해결!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 슬라이드 14: 전체 코드 흐름 요약 ==================== -->
+    <div class="slide">
+      <h2>전체 코드 흐름 요약 <span class="badge">Summary</span></h2>
+      <div class="code-block" style="font-size: 16px; line-height: 2;">
+        <span class="lang-tag">Flow</span>
+<span class="kw">페이지 로드</span>
+  └→ <span class="fn">fetchPrices()</span> 호출
+       ├→ 상태 표시: <span class="str">"갱신 중..."</span> (노란색)
+       │
+       ├→ <span class="fn">tryFetch</span>(<span class="str">API_URL</span>)  <span class="cm">← 직접 호출 시도</span>
+       │    실패 시 → <span class="fn">tryFetch</span>(<span class="str">프록시#1</span>)
+       │    실패 시 → <span class="fn">tryFetch</span>(<span class="str">프록시#2</span>)
+       │    실패 시 → <span class="fn">tryFetch</span>(<span class="str">프록시#3</span>)
+       │
+       ├→ <span class="kw">성공</span>: <span class="fn">updateTable</span>(data)  →  상태: <span class="tag-green">실시간</span>
+       │  <span class="kw">실패</span>: 상태 <span class="tag-red">오류 발생</span>
+       │
+       └→ <span class="fn">resetCountdown</span>()  →  30초 카운트다운 시작
+                                └→ <span class="num">0초</span> 도달 시 <span class="fn">fetchPrices()</span> 재호출 <span class="cm">← 무한 루프!</span>
+      </div>
+    </div>
+
+    <!-- ==================== 슬라이드 15: 마무리 ==================== -->
+    <div class="slide section-slide">
+      <h2>Q & A</h2>
+      <p style="margin-top: 16px;">과제 진행하면서 궁금한 점 있으면 질문해주세요</p>
+      <div style="margin-top: 40px; display: flex; gap: 20px; justify-content: center;">
+        <div class="flow-box" style="text-align: center; min-width: 200px;">
+          <h4>과제 마감</h4>
+          <p>다음 수업 전까지</p>
+        </div>
+        <div class="flow-box" style="text-align: center; min-width: 200px;">
+          <h4>제출</h4>
+          <p>GitHub 레포지토리 링크</p>
+        </div>
+        <div class="flow-box" style="text-align: center; min-width: 200px;">
+          <h4>참고</h4>
+          <p>crypto-prices.html</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let currentSlide = 0;
+    const totalSlides = slides.length;
+
+    function showSlide(index) {
+      slides[currentSlide].classList.remove('active');
+      currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+      slides[currentSlide].classList.add('active');
+
+      // 슬라이드 번호 업데이트
+      document.getElementById('slideNumber').textContent = `${currentSlide + 1} / ${totalSlides}`;
+
+      // 진행 바 업데이트
+      const progress = ((currentSlide + 1) / totalSlides) * 100;
+      document.getElementById('progressBar').style.width = progress + '%';
+    }
+
+    // 키보드 네비게이션
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        showSlide(currentSlide + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+        e.preventDefault();
+        showSlide(currentSlide - 1);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        showSlide(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        showSlide(totalSlides - 1);
+      }
+    });
+
+    // 클릭 네비게이션
+    document.addEventListener('click', (e) => {
+      const x = e.clientX;
+      if (x > window.innerWidth / 2) {
+        showSlide(currentSlide + 1);
+      } else {
+        showSlide(currentSlide - 1);
+      }
+    });
+
+    // 초기화
+    showSlide(0);
+  </script>
+</body>
+</html>
