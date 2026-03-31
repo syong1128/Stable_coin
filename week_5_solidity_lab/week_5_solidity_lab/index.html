@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solidity Lab Simulator</title>
+  <style>
+    :root {
+      --bg: #0a0e27;
+      --surface: rgba(17, 22, 51, 0.88);
+      --surface-2: rgba(26, 31, 74, 0.94);
+      --text: #e5ecff;
+      --muted: #a7b0d6;
+      --cyan: #00d4ff;
+      --purple: #7c3aed;
+      --green: #10b981;
+      --orange: #f59e0b;
+      --red: #ef4444;
+      --blue: #60a5fa;
+      --comment: #7d859f;
+      --border: rgba(255,255,255,0.1);
+      --shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 18px 40px rgba(0,0,0,0.35);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at top, #1b2155 0%, var(--bg) 45%, #050816 100%); color: var(--text); font-family: "Segoe UI", "Malgun Gothic", sans-serif; }
+    body { overflow: hidden; }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    canvas#particles { position: fixed; inset: 0; z-index: 0; }
+    .page { position: relative; z-index: 1; min-height: 100vh; padding: 24px; display: none; }
+    .page.active { display: block; animation: fadeIn .35s ease; }
+
+    .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; gap: 14px; }
+    .brand { display:flex; align-items:center; gap: 14px; }
+    .brand-badge { width: 46px; height: 46px; border-radius: 14px; background: linear-gradient(135deg, rgba(0,212,255,.18), rgba(124,58,237,.24)); border: 1px solid rgba(0,212,255,.35); display:grid; place-items:center; box-shadow: 0 0 24px rgba(0,212,255,.18); font-size: 24px; }
+    .brand h1, .brand h2 { margin: 0; font-weight: 700; letter-spacing: -0.02em; }
+    .subtle { color: var(--muted); }
+    .ghost-btn, .primary-btn, .success-btn, .warning-btn, .danger-btn {
+      border: 1px solid transparent; border-radius: 14px; padding: 10px 14px; transition: .2s ease; font-weight: 600;
+      background: rgba(255,255,255,0.06); color: var(--text);
+    }
+    .ghost-btn:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.2); }
+    .primary-btn { background: linear-gradient(135deg, rgba(0,212,255,.18), rgba(124,58,237,.22)); border-color: rgba(0,212,255,.35); }
+    .success-btn { background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.45); color: #baf8dc; }
+    .warning-btn { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.45); color: #ffe4ab; }
+    .danger-btn { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.45); color: #ffc7c7; }
+
+    .launcher-wrap { max-width: 1220px; margin: 0 auto; padding-top: 14vh; }
+    .hero { display:grid; gap: 16px; text-align:center; margin-bottom: 38px; }
+    .hero h1 { font-size: clamp(36px, 5vw, 62px); margin: 0; letter-spacing: -0.04em; }
+    .hero p { margin: 0 auto; max-width: 820px; color: var(--muted); font-size: 18px; line-height: 1.7; }
+    .launcher-grid { display:grid; grid-template-columns: minmax(0, 1fr); max-width: 900px; margin: 0 auto; }
+    .lab-card {
+      position: relative; background: linear-gradient(180deg, rgba(17,22,51,.92), rgba(12,16,39,.96));
+      border: 1px solid rgba(0,212,255,.24); border-radius: 28px; padding: 28px; box-shadow: var(--shadow);
+      overflow: hidden; cursor: pointer; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+    .lab-card:hover { transform: translateY(-6px); box-shadow: 0 0 0 1px rgba(0,212,255,.22), 0 28px 60px rgba(0,0,0,.42); border-color: rgba(0,212,255,.45); }
+    .lab-card::before { content:""; position:absolute; inset:-40%; background: radial-gradient(circle, rgba(0,212,255,.12), transparent 36%); opacity:.8; pointer-events:none; }
+    .chain-icon { font-size: 34px; filter: drop-shadow(0 0 18px rgba(0,212,255,.35)); }
+    .card-head { display:flex; justify-content:space-between; align-items:start; gap:16px; margin-bottom: 20px; }
+    .card-title { font-size: 28px; font-weight: 800; margin: 0 0 8px; }
+    .pill-row { display:flex; flex-wrap:wrap; gap:8px; }
+    .pill { padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--muted); font-size: 13px; border:1px solid rgba(255,255,255,.08); }
+    .card-desc { font-size: 16px; color: #ced8ff; line-height: 1.8; margin: 0 0 24px; }
+    .progress-wrap { display:grid; gap:8px; }
+    .progress-label { display:flex; justify-content:space-between; font-size:14px; color: var(--muted); }
+    .progress-bar { width:100%; height:12px; border-radius: 999px; background: rgba(255,255,255,.08); overflow:hidden; }
+    .progress-fill { height:100%; background: linear-gradient(90deg, var(--cyan), var(--purple)); width:0%; transition:width .35s ease; box-shadow: 0 0 18px rgba(0,212,255,.28); }
+
+    .lab-shell { display:grid; grid-template-rows: auto auto minmax(0,1fr) auto; gap: 16px; height: calc(100vh - 48px); max-width: 1600px; margin: 0 auto; }
+    .tabbar, .toolbar, .panel, .console-panel, .help-modal { background: var(--surface); border:1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(16px); }
+    .tabbar { border-radius: 22px; padding: 12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+    .tab-buttons { display:flex; gap:10px; flex-wrap:wrap; }
+    .tab-btn { padding: 10px 16px; border-radius: 14px; border:1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); color: var(--muted); font-weight: 600; }
+    .tab-btn.active { color: var(--text); border-color: rgba(0,212,255,.32); background: linear-gradient(135deg, rgba(0,212,255,.18), rgba(124,58,237,.14)); box-shadow: 0 0 20px rgba(0,212,255,.12); }
+    .toolbar { border-radius: 18px; padding: 12px 14px; display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; }
+    .toolbar-left, .toolbar-right { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .status-chip { padding:8px 12px; border-radius: 999px; background: rgba(255,255,255,.05); color: var(--muted); font-size: 13px; border:1px solid rgba(255,255,255,.08); }
+    .status-ok { color:#c9ffe8; border-color: rgba(16,185,129,.35); background: rgba(16,185,129,.08); }
+    .status-warn { color:#ffe8b5; border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.08); }
+    .status-err { color:#ffd1d1; border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.08); }
+
+    .main-grid { display:grid; grid-template-columns: 1.35fr 0.9fr 1fr; gap: 16px; min-height: 0; }
+    .panel { border-radius: 24px; min-height: 0; display:flex; flex-direction:column; overflow:hidden; }
+    .panel-header { padding: 18px 20px 10px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .panel-title { margin:0; font-size:20px; letter-spacing:-0.02em; }
+    .panel-body { padding: 0 20px 20px; min-height:0; overflow:auto; }
+
+    .editor-shell { display:grid; grid-template-columns: 58px minmax(0, 1fr); gap: 0; height: 100%; border-radius: 16px; overflow:hidden; border:1px solid rgba(255,255,255,.06); background:#0c112c; }
+    .line-numbers { background: rgba(255,255,255,.03); color:#7f89b6; padding: 16px 10px; text-align:right; font-family: Consolas, "Fira Code", monospace; font-size: 14px; line-height: 1.6; user-select: none; overflow:hidden; }
+    .editor-stack { position:relative; min-height:560px; }
+    .highlight, .code-input {
+      position:absolute; inset:0; margin:0; padding: 16px 18px; font-family: Consolas, "Fira Code", monospace; font-size: 14px; line-height: 1.6;
+      white-space: pre; tab-size: 2; overflow:auto;
+    }
+    .highlight { color: var(--text); pointer-events:none; }
+    .code-input { background: transparent; color: transparent; caret-color: #ffffff; border:0; resize:none; outline:none; }
+    .code-input::selection { background: rgba(0,212,255,.22); }
+    .tok-keyword { color: var(--cyan); }
+    .tok-type { color: #c084fc; }
+    .tok-string { color: #86efac; }
+    .tok-number { color: #fbbf24; }
+    .tok-comment { color: var(--comment); }
+    .tok-function { color: var(--blue); }
+    .cursor-pos { font-size: 13px; color: var(--muted); }
+
+    .info-grid { display:grid; gap:14px; }
+    .card-mini { padding: 14px; border-radius: 16px; background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); }
+    .card-mini h4 { margin:0 0 10px; font-size:16px; }
+    .meta-list, .guide-list { display:grid; gap:8px; color:#dce5ff; font-size:14px; line-height:1.7; }
+    .meta-row { display:flex; justify-content:space-between; gap:10px; }
+    .guide-list li { margin-left: 18px; }
+    .account-select, .fn-input, .mini-input {
+      width:100%; background: rgba(255,255,255,.05); color:var(--text); border:1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 10px 12px;
+    }
+
+    .interaction-empty { padding: 30px 18px; border-radius: 18px; text-align:center; color: var(--muted); border:1px dashed rgba(255,255,255,.14); background: rgba(255,255,255,.02); }
+    .function-card, .storage-card, .challenge-box, .result-box { padding: 14px; border-radius: 16px; background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); margin-bottom: 12px; }
+    .function-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+    .function-name { font-weight: 700; }
+    .fn-meta { color: var(--muted); font-size: 13px; }
+    .fn-params { display:grid; gap:10px; margin-bottom: 10px; }
+    .result-box { min-height: 110px; white-space: pre-wrap; line-height: 1.65; color: #d6e0ff; }
+    .storage-item { display:flex; justify-content:space-between; gap:12px; padding: 10px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+    .storage-item:last-child { border-bottom:none; }
+    .storage-value.flash { animation: neonPulse .8s ease; }
+
+    .console-panel { border-radius: 22px; padding: 12px 14px; min-height: 120px; max-height: 240px; overflow:hidden; display:flex; flex-direction:column; }
+    .console-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom: 8px; }
+    .console-body { overflow:auto; display:grid; gap:8px; padding-right:4px; }
+    .console-item { border-radius: 14px; padding: 10px 12px; background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); cursor:pointer; }
+    .console-item summary { list-style:none; display:flex; justify-content:space-between; gap:12px; color: #eaf1ff; }
+    .console-item summary::-webkit-details-marker { display:none; }
+    .console-item .detail { color: var(--muted); font-size:13px; line-height:1.6; padding-top:8px; }
+    .console-item.success { border-color: rgba(16,185,129,.25); }
+    .console-item.error { border-color: rgba(239,68,68,.25); }
+    .console-item.warning { border-color: rgba(245,158,11,.25); }
+    .console-item.info { border-color: rgba(96,165,250,.25); }
+    .console-item.tx { border-color: rgba(245,158,11,.25); }
+
+    .toast-wrap { position: fixed; top: 24px; right: 24px; z-index: 50; display:grid; gap:10px; }
+    .toast { min-width: 280px; max-width: 420px; padding: 12px 14px; border-radius: 16px; background: rgba(17,22,51,.95); border:1px solid rgba(255,255,255,.1); box-shadow: var(--shadow); animation: slideIn .25s ease; }
+    .toast.success { border-color: rgba(16,185,129,.35); }
+    .toast.error { border-color: rgba(239,68,68,.35); }
+    .toast.warning { border-color: rgba(245,158,11,.35); }
+    .toast.info { border-color: rgba(0,212,255,.35); }
+
+    .help-backdrop { position: fixed; inset: 0; z-index: 45; background: rgba(2,6,20,.55); display:none; align-items:center; justify-content:center; padding: 24px; }
+    .help-backdrop.open { display:flex; }
+    .help-modal { width:min(700px, 100%); border-radius: 28px; padding: 24px; }
+    .shortcut-grid { display:grid; grid-template-columns: 160px 1fr; gap:10px 16px; margin-top: 16px; }
+    .kbd { display:inline-flex; align-items:center; justify-content:center; min-width: 44px; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); font-family: Consolas, monospace; }
+
+    .hidden { display:none !important; }
+
+    @keyframes fadeIn { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform:none; } }
+    @keyframes slideIn { from { opacity:0; transform: translateX(16px);} to { opacity:1; transform:none;} }
+    @keyframes neonPulse { 0%{ box-shadow:0 0 0 rgba(0,212,255,0); } 50%{ box-shadow:0 0 18px rgba(0,212,255,.38);} 100%{ box-shadow:0 0 0 rgba(0,212,255,0);} }
+    @keyframes miningPulse { 0%{ box-shadow:0 0 0 0 rgba(124,58,237,.24);} 70%{ box-shadow:0 0 0 22px rgba(124,58,237,0);} 100%{ box-shadow:0 0 0 0 rgba(124,58,237,0);} }
+
+    @media (max-width: 1320px) {
+      body { overflow:auto; }
+      .lab-shell { height: auto; }
+      .main-grid { grid-template-columns: 1fr; }
+      .editor-stack { min-height: 420px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <section class="page active" id="launcherPage">
+    <div class="launcher-wrap">
+      <div class="hero">
+        <div class="brand" style="justify-content:center;">
+          <div class="brand-badge">⛓</div>
+          <div>
+            <h1>Solidity Lab Simulator</h1>
+            <p>브라우저 안에서 Remix의 흐름을 닮은 작은 실습장을 열어 두었습니다. HelloWorld와 HelloNumber를 손끝으로 다뤄 보고, public과 private, view와 상태 변경의 차이를 눈으로 확인할 수 있습니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="launcher-grid">
+        <article class="lab-card" id="lab1Card" tabindex="0">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Lab 1 · HelloWorld & HelloNumber</div>
+              <div class="pill-row">
+                <span class="pill">기초 ★☆☆</span>
+                <span class="pill">~15분</span>
+                <span class="pill">string</span>
+                <span class="pill">public</span>
+                <span class="pill">view</span>
+                <span class="pill">int</span>
+              </div>
+            </div>
+            <div class="chain-icon">⛓</div>
+          </div>
+          <p class="card-desc">런처에서 이 카드를 열면 3개의 서브탭으로 구성된 실습 페이지로 이동합니다. 코드 확인, 컴파일, 배포, 함수 호출, 도전과제까지 한 흐름으로 이어집니다.</p>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>진행률</span>
+              <strong id="progressText">0 / 3 완료</strong>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+            <button class="primary-btn">Lab 1 열기</button>
+            <button class="ghost-btn" id="resetProgressBtn" type="button">진행률 초기화</button>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="labPage">
+    <div class="lab-shell">
+      <div class="topbar">
+        <div class="brand">
+          <div class="brand-badge">Ξ</div>
+          <div>
+            <h2>Lab 1 · Solidity & Remix I</h2>
+            <div class="subtle">단축키: 1 이동 · Esc 런처 · Ctrl+Enter 컴파일 · Ctrl+Shift+D 배포 · Ctrl+/ 도움말 · Ctrl+` 콘솔</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="ghost-btn" id="backLauncherBtn">런처로 복귀</button>
+          <button class="ghost-btn" id="helpBtn">단축키 도움말</button>
+        </div>
+      </div>
+
+      <div class="tabbar">
+        <div class="tab-buttons" id="tabButtons"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <span class="status-chip" id="routeStatus">#lab1</span>
+          <span class="status-chip" id="tabCompleteStatus">완료 0 / 3</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="primary-btn" id="compileBtn">컴파일</button>
+          <button class="warning-btn" id="deployBtn">배포</button>
+          <button class="ghost-btn" id="copyBtn">코드 복사</button>
+          <button class="ghost-btn" id="resetCodeBtn">코드 초기화</button>
+        </div>
+        <div class="toolbar-right">
+          <span class="status-chip" id="compileStatus">아직 컴파일되지 않았습니다</span>
+          <span class="status-chip" id="deployStatus">배포 전</span>
+        </div>
+      </div>
+
+      <div class="main-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title">코드 에디터</h3>
+            <div class="cursor-pos" id="cursorPos">줄 1, 열 1</div>
+          </div>
+          <div class="panel-body" style="padding-top:0;">
+            <div class="editor-shell">
+              <pre class="line-numbers" id="lineNumbers"></pre>
+              <div class="editor-stack">
+                <pre class="highlight" id="highlight"></pre>
+                <textarea spellcheck="false" class="code-input" id="codeInput"></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title">컨트롤 패널</h3>
+          </div>
+          <div class="panel-body">
+            <div class="info-grid">
+              <div class="card-mini">
+                <h4>계정 / VM 상태</h4>
+                <div class="meta-list">
+                  <label>
+                    <div style="margin-bottom:6px; color:var(--muted);">실행 계정</div>
+                    <select class="account-select" id="accountSelect"></select>
+                  </label>
+                  <div class="meta-row"><span>msg.sender</span><strong id="senderText">-</strong></div>
+                  <div class="meta-row"><span>잔액</span><strong id="balanceText">-</strong></div>
+                  <div class="meta-row"><span>nonce</span><strong id="nonceText">-</strong></div>
+                  <div class="meta-row"><span>blockNumber</span><strong id="blockText">1</strong></div>
+                  <div class="meta-row"><span>timestamp</span><strong id="timeText">-</strong></div>
+                  <div class="meta-row"><span>gasPrice</span><strong>20 Gwei</strong></div>
+                  <div class="meta-row"><span>chainId</span><strong>1337</strong></div>
+                </div>
+              </div>
+
+              <div class="card-mini">
+                <h4>실습 가이드</h4>
+                <ol class="guide-list" id="guideList"></ol>
+                <div class="challenge-box hidden" id="challengeBox"></div>
+              </div>
+
+              <div class="card-mini">
+                <h4>컴파일 규칙</h4>
+                <div class="meta-list">
+                  <div>• <code>pragma solidity</code> 문이 있어야 합니다.</div>
+                  <div>• <code>contract</code> 선언이 있어야 합니다.</div>
+                  <div>• 중괄호 짝이 맞아야 합니다.</div>
+                  <div>• public 변수는 자동 getter처럼 인터랙션 패널에 나타납니다.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title">인터랙션 패널</h3>
+          </div>
+          <div class="panel-body" id="interactionPanel">
+            <div class="interaction-empty">컨트랙트를 배포하세요.<br>1 → 코드 확인 · 2 → 컴파일 · 3 → 배포</div>
+          </div>
+        </section>
+      </div>
+
+      <section class="console-panel" id="consolePanel">
+        <div class="console-head">
+          <strong>콘솔</strong>
+          <div style="display:flex; gap:10px;">
+            <button class="ghost-btn" id="toggleConsoleBtn">최소화/최대화</button>
+            <button class="ghost-btn" id="clearConsoleBtn">콘솔 지우기</button>
+          </div>
+        </div>
+        <div class="console-body" id="consoleBody"></div>
+      </section>
+    </div>
+  </section>
+
+  <div class="help-backdrop" id="helpBackdrop">
+    <div class="help-modal">
+      <div style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+        <div>
+          <h3 style="margin:0; font-size:26px;">단축키 도움말</h3>
+          <div class="subtle">실습 흐름을 빠르게 다루기 위한 키입니다.</div>
+        </div>
+        <button class="ghost-btn" id="closeHelpBtn">닫기</button>
+      </div>
+      <div class="shortcut-grid">
+        <div><span class="kbd">1</span></div><div>Lab 1 페이지로 이동</div>
+        <div><span class="kbd">Esc</span></div><div>런처 페이지로 복귀</div>
+        <div><span class="kbd">Ctrl+Enter</span></div><div>현재 탭 코드 컴파일</div>
+        <div><span class="kbd">Ctrl+Shift+D</span></div><div>현재 탭 코드 배포</div>
+        <div><span class="kbd">Ctrl+/</span></div><div>이 도움말 열기 / 닫기</div>
+        <div><span class="kbd">Ctrl+`</span></div><div>콘솔 토글</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LABS = [
+      {
+        id: 'tab1',
+        name: '탭 1 · HelloWorld 기본',
+        storageKey: 'solidity-lab-tab1',
+        code: `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.26;\n\ncontract HelloWorld {\n  string public greet = "Hello World";\n}`,
+        guide: [
+          '코드를 확인하세요. string public greet',
+          '컴파일 버튼을 누르세요.',
+          '배포 버튼을 누르세요.',
+          '우측에서 greet 버튼을 눌러 값을 확인하세요.',
+          '힌트: public 변수는 자동 getter가 생성됩니다.'
+        ],
+        challengeHTML: ''
+      },
+      {
+        id: 'tab2',
+        name: '탭 2 · HelloWorld 확장',
+        storageKey: 'solidity-lab-tab2',
+        code: `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.26;\n\ncontract HelloWorld {\n  string private _greeting = "Hello, World!";\n\n  function greet() public view returns (string memory) {\n    return _greeting;\n  }\n\n  function setGreeting(string memory newGreeting) public {\n    _greeting = newGreeting;\n  }\n}`,
+        guide: [
+          'private 변수와 함수를 확인하세요.',
+          '컴파일 후 배포하세요.',
+          'greet()를 호출해보세요.',
+          'setGreeting으로 값을 바꾸세요.',
+          '다시 greet()를 호출해 변경 여부를 확인하세요.'
+        ],
+        challengeHTML: '<strong>힌트</strong><br>상태 변경 함수는 gas를 소모합니다. 잔액 변화를 함께 보세요.'
+      },
+      {
+        id: 'tab3',
+        name: '탭 3 · HelloNumber',
+        storageKey: 'solidity-lab-tab3',
+        code: `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.26;\n\ncontract HelloNumber {\n  int public number = 10;\n}`,
+        guide: [
+          'int 타입 변수를 확인하세요.',
+          '컴파일 후 배포하고 number를 확인하세요.',
+          '도전과제로 public을 private으로 바꿔보세요.',
+          'getNumber()와 setNumber(int)를 직접 추가해보세요.'
+        ],
+        challengeHTML: `
+          <strong>도전과제</strong><br>
+          • int public number → int private _number<br>
+          • getNumber(): public view returns (int)<br>
+          • setNumber(int): public 함수로 _number 변경<br><br>
+          <button class="ghost-btn" id="applyHintBtn" type="button">힌트 코드 적용</button>
+          <div style="margin-top:10px; color:var(--muted); font-size:14px;">public은 자동 getter, private은 직접 getter 작성이 필요합니다.</div>
+        `
+      }
+    ];
+
+    const HINT_CODE = `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.26;\n\ncontract HelloNumber {\n  int private _number = 10;\n\n  function getNumber() public view returns (int) {\n    return _number;\n  }\n\n  function setNumber(int newNumber) public {\n    _number = newNumber;\n  }\n}`;
+
+    const state = {
+      route: location.hash === '#lab1' ? 'lab1' : 'launcher',
+      currentTab: 'tab1',
+      compiled: false,
+      deployed: false,
+      parsed: null,
+      deployedContract: null,
+      activeAccountIndex: Number(localStorage.getItem('solidity-lab-account') || 0),
+      progress: JSON.parse(localStorage.getItem('solidity-lab-progress') || '{"tab1":false,"tab2":false,"tab3":false}'),
+      consoleCollapsed: false,
+      engine: {
+        blockNumber: 1,
+        timestamp: Math.floor(Date.now() / 1000),
+        gasPrice: 20,
+        chainId: 1337,
+        accounts: [
+          { address: '0x5B38Da6a701c568545dCfcB03FcB875f56beddC4', balance: 100, label: 'Account 1', nonce: 0 },
+          { address: '0xAb8483F64d9C6d1EcF9b849Ae677dD3315835Cb2', balance: 100, label: 'Account 2', nonce: 0 },
+          { address: '0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db', balance: 100, label: 'Account 3', nonce: 0 },
+          { address: '0x78731D3Ca6b7E34ac0F824c42a7cC18A495cabaB', balance: 100, label: 'Account 4', nonce: 0 },
+          { address: '0x617F2E2fD72FD9D6a48e6C454e4A4A0d60A6B58A', balance: 100, label: 'Account 5', nonce: 0 }
+        ]
+      },
+      logs: []
+    };
+
+    const els = {};
+
+    document.addEventListener('DOMContentLoaded', () => {
+      bindElements();
+      buildTabs();
+      populateAccounts();
+      attachEvents();
+      loadTab(state.currentTab);
+      updateProgressUI();
+      renderRoute();
+      updateVmUI();
+      addLog('info', '시뮬레이터가 준비되었습니다. 런처 또는 단축키 1로 Lab을 여세요.', {});
+      initParticles();
+    });
+
+    function bindElements() {
+      [
+        'launcherPage','labPage','tabButtons','codeInput','highlight','lineNumbers','cursorPos','guideList','challengeBox',
+        'compileBtn','deployBtn','copyBtn','resetCodeBtn','compileStatus','deployStatus','interactionPanel','accountSelect',
+        'senderText','balanceText','nonceText','blockText','timeText','consoleBody','toastWrap','lab1Card','backLauncherBtn','helpBtn',
+        'helpBackdrop','closeHelpBtn','toggleConsoleBtn','clearConsoleBtn','consolePanel','routeStatus','tabCompleteStatus','progressText',
+        'progressFill','resetProgressBtn'
+      ].forEach(id => els[id] = document.getElementById(id));
+    }
+
+    function attachEvents() {
+      els.lab1Card.addEventListener('click', () => openLab());
+      els.backLauncherBtn.addEventListener('click', () => openLauncher());
+      els.helpBtn.addEventListener('click', toggleHelp);
+      els.closeHelpBtn.addEventListener('click', toggleHelp);
+      els.helpBackdrop.addEventListener('click', (e) => { if (e.target === els.helpBackdrop) toggleHelp(); });
+      els.compileBtn.addEventListener('click', compileCurrentCode);
+      els.deployBtn.addEventListener('click', deployCurrentCode);
+      els.copyBtn.addEventListener('click', copyCurrentCode);
+      els.resetCodeBtn.addEventListener('click', resetCurrentCode);
+      els.accountSelect.addEventListener('change', () => {
+        state.activeAccountIndex = Number(els.accountSelect.value);
+        localStorage.setItem('solidity-lab-account', String(state.activeAccountIndex));
+        updateVmUI();
+        addLog('info', '실행 계정을 변경했습니다.', { account: getActiveAccount().address });
+        if (state.deployed) renderInteractionPanel();
+      });
+      els.toggleConsoleBtn.addEventListener('click', toggleConsole);
+      els.clearConsoleBtn.addEventListener('click', clearConsole);
+      els.resetProgressBtn.addEventListener('click', resetProgress);
+
+      els.codeInput.addEventListener('input', () => {
+        saveCurrentCode();
+        syncEditor();
+        state.compiled = false;
+        state.deployed = false;
+        state.parsed = null;
+        state.deployedContract = null;
+        updateStatusChips();
+        renderInteractionPanel();
+      });
+      els.codeInput.addEventListener('scroll', syncScroll);
+      els.highlight.addEventListener('scroll', syncScroll);
+      els.codeInput.addEventListener('click', updateCursorPos);
+      els.codeInput.addEventListener('keyup', updateCursorPos);
+      els.codeInput.addEventListener('keydown', handleEditorKeydown);
+
+      document.addEventListener('keydown', handleGlobalShortcuts);
+      window.addEventListener('hashchange', () => {
+        state.route = location.hash === '#lab1' ? 'lab1' : 'launcher';
+        renderRoute();
+      });
+    }
+
+    function handleGlobalShortcuts(e) {
+      if (e.key === '1' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        openLab();
+      }
+      if (e.key === 'Escape') {
+        openLauncher();
+      }
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        compileCurrentCode();
+      }
+      if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        e.preventDefault();
+        deployCurrentCode();
+      }
+      if (e.ctrlKey && e.key === '/') {
+        e.preventDefault();
+        toggleHelp();
+      }
+      if (e.ctrlKey && e.key === '`') {
+        e.preventDefault();
+        toggleConsole();
+      }
+    }
+
+    function handleEditorKeydown(e) {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = e.target.selectionStart;
+        const end = e.target.selectionEnd;
+        e.target.value = e.target.value.slice(0, start) + '  ' + e.target.value.slice(end);
+        e.target.selectionStart = e.target.selectionEnd = start + 2;
+        saveCurrentCode();
+        syncEditor();
+      }
+    }
+
+    function buildTabs() {
+      els.tabButtons.innerHTML = '';
+      LABS.forEach(lab => {
+        const btn = document.createElement('button');
+        btn.className = 'tab-btn' + (lab.id === state.currentTab ? ' active' : '');
+        btn.textContent = lab.name;
+        btn.addEventListener('click', () => loadTab(lab.id));
+        els.tabButtons.appendChild(btn);
+      });
+    }
+
+    function populateAccounts() {
+      els.accountSelect.innerHTML = state.engine.accounts.map((acc, idx) => `<option value="${idx}">${acc.label} · ${truncate(acc.address)}</option>`).join('');
+      els.accountSelect.value = String(state.activeAccountIndex);
+    }
+
+    function loadTab(tabId) {
+      state.currentTab = tabId;
+      state.compiled = false;
+      state.deployed = false;
+      state.parsed = null;
+      state.deployedContract = null;
+      buildTabs();
+      const lab = getCurrentLab();
+      const saved = localStorage.getItem(lab.storageKey);
+      els.codeInput.value = saved || lab.code;
+      els.guideList.innerHTML = lab.guide.map(item => `<li>${item}</li>`).join('');
+      els.challengeBox.innerHTML = lab.challengeHTML || '';
+      els.challengeBox.classList.toggle('hidden', !lab.challengeHTML);
+      if (tabId === 'tab3') {
+        setTimeout(() => {
+          const applyHintBtn = document.getElementById('applyHintBtn');
+          if (applyHintBtn) {
+            applyHintBtn.addEventListener('click', () => {
+              els.codeInput.value = HINT_CODE;
+              saveCurrentCode();
+              syncEditor();
+              toast('success', '힌트 코드를 적용했습니다. 이제 컴파일해 보세요.');
+            });
+          }
+        }, 0);
+      }
+      syncEditor();
+      updateCursorPos();
+      updateStatusChips();
+      renderInteractionPanel();
+      updateProgressUI();
+      addLog('info', `${lab.name} 탭을 열었습니다.`, { tab: lab.id });
+    }
+
+    function getCurrentLab() { return LABS.find(l => l.id === state.currentTab); }
+
+    function saveCurrentCode() {
+      localStorage.setItem(getCurrentLab().storageKey, els.codeInput.value);
+    }
+
+    function syncEditor() {
+      const value = els.codeInput.value || '';
+      els.highlight.innerHTML = highlightSolidity(value) + '\n';
+      const lineCount = Math.max(1, value.split('\n').length);
+      els.lineNumbers.textContent = Array.from({length: lineCount}, (_, i) => i + 1).join('\n');
+      syncScroll();
+    }
+
+    function syncScroll() {
+      els.highlight.scrollTop = els.codeInput.scrollTop;
+      els.highlight.scrollLeft = els.codeInput.scrollLeft;
+      els.lineNumbers.scrollTop = els.codeInput.scrollTop;
+    }
+
+    function highlightSolidity(code) {
+      const esc = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      let out = esc;
+      out = out.replace(/(\/\/.*$)/gm, '<span class="tok-comment">$1</span>');
+      out = out.replace(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g, '<span class="tok-string">$1</span>');
+      out = out.replace(/\b(\d+)\b/g, '<span class="tok-number">$1</span>');
+      out = out.replace(/\b(string|int|uint|uint256|int256|bool|address|bytes)\b/g, '<span class="tok-type">$1</span>');
+      out = out.replace(/\b(pragma|solidity|contract|function|returns|public|private|view|pure|if|else|return|require|revert|memory|storage|calldata|payable)\b/g, '<span class="tok-keyword">$1</span>');
+      out = out.replace(/\b(function\s+)([A-Za-z_]\w*)/g, '$1<span class="tok-function">$2</span>');
+      return out;
+    }
+
+    function updateCursorPos() {
+      const pos = els.codeInput.selectionStart || 0;
+      const lines = els.codeInput.value.slice(0, pos).split('\n');
+      const line = lines.length;
+      const col = lines[lines.length - 1].length + 1;
+      els.cursorPos.textContent = `줄 ${line}, 열 ${col}`;
+    }
+
+    function compileCurrentCode() {
+      const source = els.codeInput.value;
+      const parsed = parseSolidity(source);
+      if (!parsed.ok) {
+        state.compiled = false;
+        state.parsed = null;
+        state.deployed = false;
+        state.deployedContract = null;
+        updateStatusChips();
+        renderInteractionPanel();
+        toast('error', parsed.error);
+        addLog('error', '컴파일 실패', { reason: parsed.error, tab: state.currentTab });
+        return;
+      }
+      state.compiled = true;
+      state.parsed = parsed;
+      state.deployed = false;
+      state.deployedContract = null;
+      updateStatusChips();
+      renderInteractionPanel();
+      toast('success', `${parsed.contractName} 컴파일 성공`);
+      addLog('success', '컴파일 성공', { contract: parsed.contractName, variables: parsed.variables, functions: parsed.functions });
+    }
+
+    function parseSolidity(source) {
+      if (!/pragma\s+solidity/i.test(source)) return { ok: false, error: 'pragma solidity 문이 없습니다.' };
+      if (!/contract\s+[A-Za-z_]\w*/.test(source)) return { ok: false, error: 'contract 선언이 없습니다.' };
+      if (!bracesMatch(source)) return { ok: false, error: '중괄호 짝이 맞지 않습니다.' };
+
+      const contractMatch = source.match(/contract\s+([A-Za-z_]\w*)/);
+      const contractName = contractMatch ? contractMatch[1] : 'UnknownContract';
+
+      const variables = [];
+      const varRegex = /^\s*(string|int|uint|uint256|int256|bool|address|bytes)\s+(public|private)\s+([A-Za-z_]\w*)\s*=\s*([^;]+);/gm;
+      let m;
+      while ((m = varRegex.exec(source)) !== null) {
+        variables.push({ type: m[1], visibility: m[2], name: m[3], initial: parseLiteral(m[4].trim(), m[1]) });
+      }
+
+      const functions = [];
+      const fnRegex = /function\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*(public|private)?\s*(view|pure)?\s*(returns\s*\(([^)]*)\))?\s*\{([\s\S]*?)\}/g;
+      while ((m = fnRegex.exec(source)) !== null) {
+        const params = parseParams(m[2]);
+        functions.push({
+          name: m[1],
+          params,
+          visibility: m[3] || 'public',
+          mutability: m[4] || 'nonpayable',
+          returnType: m[6] ? m[6].trim() : null,
+          body: m[7].trim()
+        });
+      }
+
+      return { ok: true, contractName, variables, functions, source };
+    }
+
+    function bracesMatch(str) {
+      let count = 0;
+      for (const ch of str) {
+        if (ch === '{') count++;
+        if (ch === '}') count--;
+        if (count < 0) return false;
+      }
+      return count === 0;
+    }
+
+    function parseParams(paramsRaw) {
+      if (!paramsRaw.trim()) return [];
+      return paramsRaw.split(',').map(part => {
+        const clean = part.trim().replace(/\s+/g, ' ');
+        const bits = clean.split(' ');
+        if (bits.length >= 2) {
+          return { type: bits[0], name: bits[bits.length - 1] };
+        }
+        return { type: 'string', name: clean || 'arg' };
+      });
+    }
+
+    function parseLiteral(raw, type) {
+      const trimmed = raw.trim();
+      if (type === 'string') return trimmed.replace(/^"|"$/g, '');
+      if (type === 'bool') return trimmed === 'true';
+      if (/^(int|uint)/.test(type)) return Number(trimmed);
+      return trimmed;
+    }
+
+    function deployCurrentCode() {
+      if (!state.compiled || !state.parsed) {
+        toast('warning', '먼저 컴파일을 완료해야 합니다.');
+        addLog('warning', '배포 실패', { reason: 'compile first' });
+        return;
+      }
+
+      const contractAddress = makeAddress(state.parsed.contractName + state.engine.blockNumber + Date.now());
+      const storage = {};
+      state.parsed.variables.forEach(v => storage[v.name] = v.initial);
+      state.deployedContract = { address: contractAddress, storage, abi: state.parsed.functions, variables: state.parsed.variables };
+      state.deployed = true;
+      consumeGas(53000 + Math.floor(Math.random() * 15000), 'deploy');
+      state.engine.blockNumber += 1;
+      state.engine.timestamp = Math.floor(Date.now() / 1000);
+      updateVmUI();
+      updateStatusChips();
+      renderInteractionPanel();
+      toast('success', `${state.parsed.contractName} 배포 완료`);
+      addLog('tx', '배포 완료', { contract: state.parsed.contractName, address: contractAddress, blockNumber: state.engine.blockNumber });
+    }
+
+    function renderInteractionPanel() {
+      if (!state.deployed || !state.deployedContract || !state.parsed) {
+        els.interactionPanel.innerHTML = '<div class="interaction-empty">컨트랙트를 배포하세요.<br>1 → 코드 확인 · 2 → 컴파일 · 3 → 배포</div>';
+        return;
+      }
+      const { variables, abi } = state.deployedContract;
+      const publicVars = variables.filter(v => v.visibility === 'public');
+      const html = [];
+      html.push(`<div class="card-mini" style="margin-bottom:12px;"><div class="meta-list"><div class="meta-row"><span>배포 주소</span><strong>${truncate(state.deployedContract.address, 10, 8)}</strong></div><div class="meta-row"><span>컨트랙트</span><strong>${state.parsed.contractName}</strong></div><div class="meta-row"><span>함수 수</span><strong>${abi.length}</strong></div></div></div>`);
+      if (publicVars.length) {
+        publicVars.forEach(v => {
+          html.push(functionCardHTML({ name: v.name, mutability: 'view', returnType: v.type, params: [] }, true));
+        });
+      }
+      abi.forEach(fn => html.push(functionCardHTML(fn, false)));
+      html.push('<div class="storage-card"><h4 style="margin:0 0 10px;">상태 변수</h4><div id="storageView"></div></div>');
+      html.push('<div class="result-box" id="resultBox">여기에 함수 실행 결과가 표시됩니다.</div>');
+      els.interactionPanel.innerHTML = html.join('');
+      renderStorageView();
+      attachFunctionEvents();
+    }
+
+    function functionCardHTML(fn, isAutoGetter) {
+      const isView = fn.mutability === 'view' || fn.mutability === 'pure';
+      const btnClass = isView ? 'success-btn' : 'warning-btn';
+      const paramsHtml = fn.params.map((p, idx) => `<input class="fn-input" data-fn="${fn.name}" data-param-index="${idx}" placeholder="${p.type} ${p.name}" />`).join('');
+      return `
+        <div class="function-card">
+          <div class="function-head">
+            <div>
+              <div class="function-name">${fn.name}${isAutoGetter ? ' <span class="fn-meta">(auto getter)</span>' : ''}</div>
+              <div class="fn-meta">${fn.mutability || 'nonpayable'} · ${fn.returnType || 'no return'}</div>
+            </div>
+            <button class="${btnClass}" data-run-fn="${fn.name}" data-auto="${isAutoGetter ? '1' : '0'}">실행</button>
+          </div>
+          <div class="fn-params">${paramsHtml || '<div class="subtle">파라미터 없음</div>'}</div>
+        </div>
+      `;
+    }
+
+    function attachFunctionEvents() {
+      document.querySelectorAll('[data-run-fn]').forEach(btn => btn.addEventListener('click', () => runFunction(btn.dataset.runFn, btn.dataset.auto === '1')));
+    }
+
+    function runFunction(name, isAutoGetter) {
+      const activeAccount = getActiveAccount();
+      let output = '';
+      try {
+        if (isAutoGetter) {
+          const value = state.deployedContract.storage[name];
+          output = `타입: ${typeof value === 'number' ? 'number' : 'string'}\n값: ${value}\n\nview/pure 함수 → 가스비 무료 (로컬에서 실행)`;
+          markCompleted();
+          addLog('success', `${name} getter 호출`, { value });
+          setResult(output);
+          toast('success', `${name} 값을 조회했습니다.`);
+          return;
+        }
+
+        const fn = state.deployedContract.abi.find(item => item.name === name);
+        if (!fn) throw new Error('함수를 찾을 수 없습니다.');
+        const args = fn.params.map((_, idx) => document.querySelector(`[data-fn="${name}"][data-param-index="${idx}"]`)?.value ?? '');
+
+        if (fn.mutability === 'view' || fn.mutability === 'pure') {
+          const result = evaluateViewFunction(fn, args);
+          output = `타입: ${fn.returnType || 'unknown'}\n값: ${result}\n\nview/pure 함수 → 가스비 무료 (로컬에서 실행)`;
+          addLog('success', `${name} 호출 성공`, { args, result, sender: activeAccount.address });
+        } else {
+          const change = executeStateFunction(fn, args);
+          const gasUsed = 21000 + Math.floor(Math.random() * 25001);
+          const gasCost = consumeGas(gasUsed, name);
+          state.engine.blockNumber += 1;
+          state.engine.timestamp = Math.floor(Date.now() / 1000);
+          output = `트랜잭션 성공\n함수: ${name}\n변경된 상태: ${change}\nGas Used: ${gasUsed}\nGas Cost: ${gasCost.toFixed(9)} ETH\nTx Hash: ${makeTxHash(name + Date.now())}`;
+          addLog('tx', `${name} 상태 변경 성공`, { args, change, gasUsed, sender: activeAccount.address, blockNumber: state.engine.blockNumber });
+          renderStorageView(true);
+          updateVmUI();
+        }
+
+        markCompleted();
+        setResult(output);
+        toast('success', `${name} 실행 완료`);
+      } catch (error) {
+        setResult(`오류: ${error.message}`);
+        toast('error', error.message);
+        addLog('error', `${name} 실행 실패`, { error: error.message, sender: activeAccount.address });
+      }
+    }
+
+    function evaluateViewFunction(fn, args) {
+      const body = fn.body.trim();
+      const directVar = body.match(/return\s+([A-Za-z_]\w*)\s*;/);
+      if (directVar) {
+        const key = directVar[1];
+        if (key in state.deployedContract.storage) return state.deployedContract.storage[key];
+        if (/^(true|false)$/.test(key)) return key;
+        if (/^-?\d+$/.test(key)) return Number(key);
+      }
+      const str = body.match(/return\s+"([\s\S]*?)"\s*;/);
+      if (str) return str[1];
+      const num = body.match(/return\s+(-?\d+)\s*;/);
+      if (num) return Number(num[1]);
+      const bool = body.match(/return\s+(true|false)\s*;/);
+      if (bool) return bool[1];
+      throw new Error('이 시뮬레이터가 해석할 수 없는 view/pure 함수입니다.');
+    }
+
+    function executeStateFunction(fn, args) {
+      const assign = fn.body.match(/([A-Za-z_]\w*)\s*=\s*([A-Za-z_]\w*)\s*;/);
+      if (!assign) throw new Error('이 시뮬레이터가 해석할 수 없는 상태 변경 함수입니다.');
+      const target = assign[1];
+      const source = assign[2];
+      const paramIndex = fn.params.findIndex(p => p.name === source);
+      if (paramIndex === -1) throw new Error('파라미터를 찾을 수 없습니다.');
+      const type = fn.params[paramIndex].type;
+      const raw = args[paramIndex];
+      if (raw === '') throw new Error('파라미터 값을 입력하세요.');
+      const value = coerceInput(raw, type);
+      if (!(target in state.deployedContract.storage)) throw new Error('대상 상태 변수를 찾을 수 없습니다.');
+      state.deployedContract.storage[target] = value;
+      return `${target} = ${String(value)}`;
+    }
+
+    function coerceInput(raw, type) {
+      if (/^(int|uint)/.test(type)) {
+        const num = Number(raw);
+        if (Number.isNaN(num)) throw new Error('숫자형 파라미터에는 숫자를 입력해야 합니다.');
+        return num;
+      }
+      if (type === 'bool') return raw === 'true';
+      return raw;
+    }
+
+    function renderStorageView(flash = false) {
+      const box = document.getElementById('storageView');
+      if (!box) return;
+      box.innerHTML = state.deployedContract.variables.map(v => {
+        const val = state.deployedContract.storage[v.name];
+        return `<div class="storage-item"><div><strong>${v.name}</strong><div class="fn-meta">${v.type} · ${v.visibility}</div></div><div class="storage-value ${flash ? 'flash' : ''}">${String(val)}</div></div>`;
+      }).join('');
+    }
+
+    function consumeGas(gasUsed, reason) {
+      const ethCost = gasUsed * state.engine.gasPrice * 1e-9;
+      const acc = getActiveAccount();
+      acc.balance = Math.max(0, acc.balance - ethCost);
+      acc.nonce += 1;
+      addLog('info', `${reason} gas 소모`, { gasUsed, gasPriceGwei: state.engine.gasPrice, ethCost: ethCost.toFixed(9), account: acc.address });
+      return ethCost;
+    }
+
+    function updateVmUI() {
+      const acc = getActiveAccount();
+      els.senderText.textContent = truncate(acc.address, 10, 8);
+      els.balanceText.textContent = `${acc.balance.toFixed(6)} ETH`;
+      els.nonceText.textContent = acc.nonce;
+      els.blockText.textContent = state.engine.blockNumber;
+      els.timeText.textContent = new Date(state.engine.timestamp * 1000).toLocaleString('ko-KR');
+    }
+
+    function updateStatusChips() {
+      els.compileStatus.textContent = state.compiled ? '컴파일 완료' : '아직 컴파일되지 않았습니다';
+      els.compileStatus.className = 'status-chip ' + (state.compiled ? 'status-ok' : 'status-warn');
+      els.deployStatus.textContent = state.deployed ? `배포 완료 · ${truncate(state.deployedContract.address)}` : '배포 전';
+      els.deployStatus.className = 'status-chip ' + (state.deployed ? 'status-ok' : 'status-warn');
+      els.routeStatus.textContent = state.route === 'lab1' ? '#lab1' : '#launcher';
+      updateProgressUI();
+    }
+
+    function updateProgressUI() {
+      const completed = Object.values(state.progress).filter(Boolean).length;
+      els.progressText.textContent = `${completed} / 3 완료`;
+      els.tabCompleteStatus.textContent = `완료 ${completed} / 3`;
+      els.progressFill.style.width = `${(completed / 3) * 100}%`;
+    }
+
+    function markCompleted() {
+      if (!state.progress[state.currentTab]) {
+        state.progress[state.currentTab] = true;
+        localStorage.setItem('solidity-lab-progress', JSON.stringify(state.progress));
+        updateProgressUI();
+      }
+    }
+
+    function resetProgress() {
+      state.progress = { tab1: false, tab2: false, tab3: false };
+      localStorage.setItem('solidity-lab-progress', JSON.stringify(state.progress));
+      updateProgressUI();
+      toast('info', '진행률을 초기화했습니다.');
+      addLog('warning', '진행률 초기화', {});
+    }
+
+    function copyCurrentCode() {
+      navigator.clipboard.writeText(els.codeInput.value).then(() => {
+        toast('success', '현재 코드를 클립보드에 복사했습니다.');
+      }).catch(() => toast('error', '복사에 실패했습니다.'));
+    }
+
+    function resetCurrentCode() {
+      const lab = getCurrentLab();
+      els.codeInput.value = lab.code;
+      saveCurrentCode();
+      syncEditor();
+      state.compiled = false;
+      state.deployed = false;
+      state.parsed = null;
+      state.deployedContract = null;
+      updateStatusChips();
+      renderInteractionPanel();
+      toast('info', '현재 탭 코드를 기본값으로 되돌렸습니다.');
+    }
+
+    function setResult(text) {
+      const box = document.getElementById('resultBox');
+      if (box) box.textContent = text;
+    }
+
+    function addLog(type, title, detail) {
+      state.logs.unshift({ type, title, detail, at: new Date(), blockNumber: state.engine.blockNumber });
+      renderConsole();
+    }
+
+    function renderConsole() {
+      els.consoleBody.innerHTML = state.logs.map(log => `
+        <details class="console-item ${log.type}">
+          <summary><span>${iconFor(log.type)} ${log.title}</span><span class="subtle">${log.at.toLocaleTimeString('ko-KR')}</span></summary>
+          <div class="detail">${formatDetails(log.detail)}<br>블록 번호: ${log.blockNumber}</div>
+        </details>
+      `).join('');
+    }
+
+    function formatDetails(detail) {
+      const entries = Object.entries(detail || {});
+      if (!entries.length) return '상세 정보 없음';
+      return entries.map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join('<br>');
+    }
+
+    function clearConsole() {
+      state.logs = [];
+      renderConsole();
+      toast('info', '콘솔을 비웠습니다.');
+    }
+
+    function toggleConsole() {
+      state.consoleCollapsed = !state.consoleCollapsed;
+      els.consolePanel.style.maxHeight = state.consoleCollapsed ? '54px' : '240px';
+    }
+
+    function toast(type, message) {
+      const node = document.createElement('div');
+      node.className = `toast ${type}`;
+      node.innerHTML = `<strong>${iconFor(type)} ${message}</strong>`;
+      els.toastWrap.appendChild(node);
+      setTimeout(() => node.remove(), 3000);
+    }
+
+    function iconFor(type) {
+      return ({ success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️', tx: '🔶' }[type] || '•');
+    }
+
+    function getActiveAccount() { return state.engine.accounts[state.activeAccountIndex]; }
+
+    function openLab() {
+      const card = els.lab1Card;
+      card.style.animation = 'miningPulse .7s ease';
+      setTimeout(() => card.style.animation = '', 700);
+      location.hash = '#lab1';
+      state.route = 'lab1';
+      renderRoute();
+    }
+
+    function openLauncher() {
+      location.hash = '#launcher';
+      state.route = 'launcher';
+      renderRoute();
+    }
+
+    function renderRoute() {
+      els.launcherPage.classList.toggle('active', state.route === 'launcher');
+      els.labPage.classList.toggle('active', state.route === 'lab1');
+      updateStatusChips();
+    }
+
+    function toggleHelp() {
+      els.helpBackdrop.classList.toggle('open');
+    }
+
+    function truncate(str, start = 8, end = 6) {
+      return str.length <= start + end ? str : `${str.slice(0, start)}...${str.slice(-end)}`;
+    }
+
+    function makeAddress(seed) {
+      return '0x' + hashString(seed).slice(0, 40);
+    }
+
+    function makeTxHash(seed) {
+      return '0x' + hashString(seed + Math.random()).padEnd(64, '0').slice(0, 64);
+    }
+
+    function hashString(input) {
+      let hash = 0;
+      for (let i = 0; i < input.length; i++) {
+        hash = ((hash << 5) - hash) + input.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash).toString(16).repeat(10);
+    }
+
+    function initParticles() {
+      const canvas = document.getElementById('particles');
+      const ctx = canvas.getContext('2d');
+      let width = canvas.width = window.innerWidth;
+      let height = canvas.height = window.innerHeight;
+      const particles = Array.from({ length: 60 }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        r: Math.random() * 2 + 0.5,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        a: Math.random() * 0.6 + 0.2
+      }));
+      let running = true;
+
+      function draw() {
+        if (!running) return;
+        ctx.clearRect(0, 0, width, height);
+        for (const p of particles) {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0) p.x = width; if (p.x > width) p.x = 0;
+          if (p.y < 0) p.y = height; if (p.y > height) p.y = 0;
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(0, 212, 255, ${p.a})`;
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        requestAnimationFrame(draw);
+      }
+      requestAnimationFrame(draw);
+      window.addEventListener('resize', () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; });
+      document.addEventListener('visibilitychange', () => {
+        running = !document.hidden;
+        if (running) requestAnimationFrame(draw);
+      });
+    }
+  </script>
+</body>
+</html>
