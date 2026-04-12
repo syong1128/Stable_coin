@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Faucet</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+<h2>Sepolia Faucet</h2>
+
+<button onclick="connect()">Connect Wallet</button>
+<p id="account">Not connected</p>
+
+<p>Request Amount: 0.01 ETH</p>
+<p>Balance: <span id="balance">-</span></p>
+
+<button onclick="claim()">Claim</button>
+
+<p id="tx"></p>
+
+<script>
+let provider, signer, contract;
+
+const CONTRACT_ADDRESS = "0xe1AD0fC26A323cF7e2616E32111F9C935a16607c";
+const ABI = [
+    "function withdraw()",
+    "function getBalance() view returns(uint256)"
+];
+
+async function connect() {
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    signer = provider.getSigner();
+    document.getElementById("account").innerText = await signer.getAddress();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+    loadBalance();
+}
+
+async function loadBalance() {
+    const b = await contract.getBalance();
+    document.getElementById("balance").innerText = ethers.utils.formatEther(b);
+}
+
+async function claim() {
+    const tx = await contract.withdraw();
+    document.getElementById("tx").innerHTML =
+      `<a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank">${tx.hash}</a>`;
+}
+</script>
+</body>
+</html>
