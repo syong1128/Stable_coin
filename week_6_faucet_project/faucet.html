@@ -1,27 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>Faucet</title>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<meta charset="UTF-8">
+<title>Sepolia Faucet</title>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    text-align: center;
+    padding: 40px;
+}
+
+.container {
+    background: white;
+    color: black;
+    max-width: 500px;
+    margin: auto;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+h2 {
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    background: #667eea;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 10px;
+}
+
+button:hover {
+    background: #5a67d8;
+}
+
+.card {
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+
+canvas {
+    margin-top: 20px;
+}
+</style>
 </head>
+
 <body>
-<h2>Sepolia Faucet</h2>
+
+<div class="container">
+<h2>🚰 Sepolia Faucet</h2>
 
 <button onclick="connect()">Connect Wallet</button>
-<p id="account">Not connected</p>
 
-<p>Request Amount: 0.01 ETH</p>
-<p>Balance: <span id="balance">-</span></p>
+<div class="card">
+<p><b>Wallet:</b></p>
+<p id="account">Not connected</p>
+</div>
+
+<div class="card">
+<p><b>Request Amount:</b> 0.01 ETH</p>
+</div>
+
+<div class="card">
+<p><b>Balance:</b></p>
+<p id="balance">-</p>
+</div>
 
 <button onclick="claim()">Claim</button>
 
 <p id="tx"></p>
 
+<h3>📊 Balance Chart</h3>
+<canvas id="balanceChart"></canvas>
+
+</div>
+
 <script>
 let provider, signer, contract;
+let chart;
+let balanceData = [];
 
-const CONTRACT_ADDRESS = "0xe1AD0fC26A323cF7e2616E32111F9C935a16607c";
+const CONTRACT_ADDRESS = "0xa82a4eE45417635465b48cdf27dabc558d2a73e9";
+
 const ABI = [
     "function withdraw()",
     "function getBalance() view returns(uint256)"
@@ -31,21 +104,64 @@ async function connect() {
     await window.ethereum.request({ method: "eth_requestAccounts" });
     provider = new ethers.providers.Web3Provider(window.ethereum);
     signer = provider.getSigner();
-    document.getElementById("account").innerText = await signer.getAddress();
+
+    const address = await signer.getAddress();
+    document.getElementById("account").innerText = address;
+
     contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
     loadBalance();
 }
 
 async function loadBalance() {
     const b = await contract.getBalance();
-    document.getElementById("balance").innerText = ethers.utils.formatEther(b);
+    const eth = ethers.utils.formatEther(b);
+
+    document.getElementById("balance").innerText = eth + " ETH";
+    updateChart(eth);
 }
 
 async function claim() {
     const tx = await contract.withdraw();
+
     document.getElementById("tx").innerHTML =
       `<a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank">${tx.hash}</a>`;
+
+    await tx.wait();
+    loadBalance();
+}
+
+function updateChart(balance) {
+    const time = new Date().toLocaleTimeString();
+
+    balanceData.push({
+        time: time,
+        value: parseFloat(balance)
+    });
+
+    const labels = balanceData.map(d => d.time);
+    const values = balanceData.map(d => d.value);
+
+    if (chart) {
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = values;
+        chart.update();
+    } else {
+        const ctx = document.getElementById('balanceChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Faucet Balance (ETH)',
+                    data: values,
+                    borderWidth: 2
+                }]
+            }
+        });
+    }
 }
 </script>
+
 </body>
 </html>

@@ -40,7 +40,7 @@
 ---
 
 ## 6. Example Transaction
-https://sepolia.etherscan.io/tx/(여기에 트랜잭션 링크)
+https://sepolia.etherscan.io/tx/0x9350212bfdf82561d82cb6968b60bbc294b133fb41de9abeafb18cf9d973400c
 
 ---
 
