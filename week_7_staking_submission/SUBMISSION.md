@@ -2,7 +2,6 @@
 
 ## Student Submission Information
 
-- GitHub URL: `여기에 GitHub 저장소 URL 입력`
 - Testnet: `Sepolia`
 - Token Contract Address: `0x8455A6e4056A4b12C5a5A4C159FABB627f080263`
 - Staking Contract Address: `0x5A8b660a1bf0D405A401A718ac7C9eecCC028257`
@@ -15,7 +14,7 @@
 
 ## Explorer Links
 
-- Deployment Explorer Link: `https://sepolia.etherscan.io/tx/0xf505cd45fcfada8f65f3d8d1efc68a2b522238c83a34ba1e6111a2646d07ecf`
+- Deployment Explorer Link: `https://sepolia.etherscan.io/tx/0xf505cd45fcfada8f65f3d8d1efc68a2b522238c83a34ba1e6111a2646d07ecfb`
 - Stake Explorer Link: `https://sepolia.etherscan.io/tx/0x5b7de47d9cb1ec284c89a20718e9fd45991e04aed45e4ada16367043478bdb7a`
 - Withdraw Explorer Link: `https://sepolia.etherscan.io/tx/0x7d5ebaafc53512f8279ee5ef6701655cf2723ab35adc9a7d922fb67c16570e99`
 
