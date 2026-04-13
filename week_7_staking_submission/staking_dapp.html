@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staking DApp</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+  <style>
+    :root {
+      --text: #edf2ff;
+      --muted: #aab6da;
+      --line: rgba(255,255,255,0.08);
+      --accent: #7c9cff;
+      --accent-2: #67e8f9;
+      --good: #40d98a;
+      --warn: #ffd166;
+      --bad: #ff6b6b;
+      --shadow: 0 14px 40px rgba(0,0,0,0.35);
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(124,156,255,0.18), transparent 30%),
+        radial-gradient(circle at top right, rgba(103,232,249,0.12), transparent 28%),
+        linear-gradient(180deg, #09101d 0%, #0b1020 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .container { width: min(1180px, calc(100% - 32px)); margin: 28px auto 36px; }
+    .hero, .grid { display: grid; gap: 18px; }
+    .hero { grid-template-columns: 1.2fr 0.8fr; margin-bottom: 18px; }
+    .grid { grid-template-columns: 1.05fr 0.95fr; }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+    .hero-main, .hero-side, .section { padding: 22px; }
+    .title { font-size: 2rem; font-weight: 800; margin: 0 0 10px; }
+    .subtitle, .hint, .footer-note { color: var(--muted); line-height: 1.6; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .pill {
+      padding: 10px 14px; border-radius: 999px; background: rgba(255,255,255,0.06);
+      border: 1px solid var(--line); color: var(--muted); font-size: 0.92rem;
+    }
+    .subgrid, .field { display: grid; gap: 10px; }
+    .field label { color: var(--muted); font-size: 0.92rem; }
+    input, textarea {
+      width: 100%; background: rgba(255,255,255,0.04); color: var(--text);
+      border: 1px solid var(--line); border-radius: 14px; padding: 13px 14px; outline: none;
+      font-size: 0.98rem;
+    }
+    textarea { min-height: 120px; resize: vertical; font-family: Consolas, monospace; font-size: 0.9rem; }
+    .btn-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .btn-row.single { grid-template-columns: 1fr; }
+    button {
+      border: 0; border-radius: 16px; padding: 14px 16px; font-size: 0.98rem; font-weight: 700;
+      cursor: pointer; color: white; background: linear-gradient(135deg, var(--accent), #5c7cff);
+    }
+    button.secondary { background: linear-gradient(135deg, #233054, #1b2745); border: 1px solid var(--line); color: var(--text); }
+    button.ghost { background: linear-gradient(135deg, #263f76, #1e3160); }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .stat {
+      padding: 16px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid var(--line);
+    }
+    .stat .label { color: var(--muted); font-size: 0.88rem; margin-bottom: 8px; }
+    .stat .value { font-size: 1.05rem; font-weight: 800; word-break: break-word; }
+    .status-box {
+      border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid var(--line);
+      padding: 16px; min-height: 92px; line-height: 1.6; white-space: pre-wrap;
+    }
+    .ok { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+    a { color: var(--accent-2); text-decoration: none; }
+    code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 8px; }
+    @media (max-width: 980px) { .hero, .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 720px) { .stats, .btn-row { grid-template-columns: 1fr; } .container { width: min(100% - 20px, 1180px); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div class="card hero-main">
+        <h1 class="title">Staking DApp Dashboard</h1>
+        <p class="subtitle">
+          MetaMask 연결, approve, stake, withdraw, 잔액 조회, 트랜잭션 해시 확인까지 한 페이지에서 수행할 수 있습니다.
+        </p>
+      </div>
+      <div class="card hero-side">
+        <div class="pill-row">
+          <div class="pill">Connect Wallet</div>
+          <div class="pill">Approve</div>
+          <div class="pill">Stake</div>
+          <div class="pill">Withdraw</div>
+          <div class="pill">Check Balance</div>
+        </div>
+        <div class="hint">
+          Remix에서 배포한 Token 주소와 Staking 주소, ABI를 넣은 뒤 사용하시면 됩니다.
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card section">
+        <h2>1) 설정</h2>
+        <div class="subgrid">
+          <div class="field">
+            <label for="explorerBase">Explorer Base URL</label>
+            <input id="explorerBase" type="text" value="https://sepolia.etherscan.io/tx/" />
+          </div>
+          <div class="field">
+            <label for="tokenAddress">ERC-20 Token Contract Address</label>
+            <input id="tokenAddress" type="text" placeholder="0x..." />
+          </div>
+          <div class="field">
+            <label for="stakingAddress">Staking Contract Address</label>
+            <input id="stakingAddress" type="text" placeholder="0x..." />
+          </div>
+          <div class="field">
+            <label for="tokenAbi">Token ABI</label>
+            <textarea id="tokenAbi">[
+  {"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}
+]</textarea>
+          </div>
+          <div class="field">
+            <label for="stakingAbi">Staking ABI</label>
+            <textarea id="stakingAbi">[
+  {"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"stake","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getStakedBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+]</textarea>
+          </div>
+          <div class="btn-row single">
+            <button id="saveConfigBtn" class="secondary">설정 저장</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card section">
+        <h2>2) 지갑 및 상호작용</h2>
+        <div class="subgrid">
+          <div class="btn-row single">
+            <button id="connectBtn">MetaMask 연결</button>
+          </div>
+
+          <div class="stats">
+            <div class="stat"><div class="label">연결 주소</div><div class="value" id="walletAddress">미연결</div></div>
+            <div class="stat"><div class="label">네트워크</div><div class="value" id="networkName">-</div></div>
+            <div class="stat"><div class="label">토큰</div><div class="value" id="tokenInfo">-</div></div>
+          </div>
+
+          <div class="field">
+            <label for="amount">Amount</label>
+            <input id="amount" type="text" placeholder="예: 10" />
+          </div>
+
+          <div class="btn-row">
+            <button id="approveBtn" class="ghost">Approve</button>
+            <button id="stakeBtn">Stake</button>
+          </div>
+
+          <div class="btn-row">
+            <button id="withdrawBtn" class="secondary">Withdraw</button>
+            <button id="refreshBtn" class="secondary">잔액 조회</button>
+          </div>
+
+          <div class="stats">
+            <div class="stat"><div class="label">내 토큰 잔액</div><div class="value" id="walletTokenBalance">-</div></div>
+            <div class="stat"><div class="label">내 스테이킹 잔액</div><div class="value" id="stakedBalance">-</div></div>
+            <div class="stat"><div class="label">최근 트랜잭션</div><div class="value" id="lastTxHash">-</div></div>
+          </div>
+
+          <div>
+            <div style="color: var(--muted); margin-bottom: 8px;">상태 / 로그</div>
+            <div class="status-box" id="statusBox">준비되었습니다.</div>
+          </div>
+
+          <div class="footer-note">
+            기본 ABI는 현재 포함된 <code>MyToken.sol</code>, <code>Staking.sol</code> 기준입니다.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      provider: null, signer: null, userAddress: null,
+      tokenContract: null, stakingContract: null,
+      decimals: 18, symbol: 'TOKEN'
+    };
+
+    const els = {
+      explorerBase: document.getElementById('explorerBase'),
+      tokenAddress: document.getElementById('tokenAddress'),
+      stakingAddress: document.getElementById('stakingAddress'),
+      tokenAbi: document.getElementById('tokenAbi'),
+      stakingAbi: document.getElementById('stakingAbi'),
+      saveConfigBtn: document.getElementById('saveConfigBtn'),
+      connectBtn: document.getElementById('connectBtn'),
+      approveBtn: document.getElementById('approveBtn'),
+      stakeBtn: document.getElementById('stakeBtn'),
+      withdrawBtn: document.getElementById('withdrawBtn'),
+      refreshBtn: document.getElementById('refreshBtn'),
+      amount: document.getElementById('amount'),
+      walletAddress: document.getElementById('walletAddress'),
+      networkName: document.getElementById('networkName'),
+      tokenInfo: document.getElementById('tokenInfo'),
+      walletTokenBalance: document.getElementById('walletTokenBalance'),
+      stakedBalance: document.getElementById('stakedBalance'),
+      lastTxHash: document.getElementById('lastTxHash'),
+      statusBox: document.getElementById('statusBox')
+    };
+
+    function setStatus(message, type='normal') {
+      els.statusBox.className = 'status-box';
+      if (type === 'ok') els.statusBox.classList.add('ok');
+      if (type === 'warn') els.statusBox.classList.add('warn');
+      if (type === 'bad') els.statusBox.classList.add('bad');
+      els.statusBox.textContent = message;
+    }
+
+    function shortAddress(addr) {
+      return !addr ? '-' : `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+    }
+
+    function saveConfigToLocal() {
+      localStorage.setItem('stakingDappConfig', JSON.stringify({
+        explorerBase: els.explorerBase.value.trim(),
+        tokenAddress: els.tokenAddress.value.trim(),
+        stakingAddress: els.stakingAddress.value.trim(),
+        tokenAbi: els.tokenAbi.value,
+        stakingAbi: els.stakingAbi.value
+      }));
+      setStatus('설정을 저장했습니다.', 'ok');
+    }
+
+    function loadConfigFromLocal() {
+      const raw = localStorage.getItem('stakingDappConfig');
+      if (!raw) return;
+      try {
+        const config = JSON.parse(raw);
+        els.explorerBase.value = config.explorerBase || els.explorerBase.value;
+        els.tokenAddress.value = config.tokenAddress || '';
+        els.stakingAddress.value = config.stakingAddress || '';
+        els.tokenAbi.value = config.tokenAbi || els.tokenAbi.value;
+        els.stakingAbi.value = config.stakingAbi || els.stakingAbi.value;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function parseAbi(text, label) {
+      try { return JSON.parse(text); }
+      catch { throw new Error(`${label} ABI JSON 형식이 올바르지 않습니다.`); }
+    }
+
+    function requireMetaMask() {
+      if (!window.ethereum) throw new Error('MetaMask가 설치되어 있지 않습니다.');
+    }
+
+    function requireContractsReady() {
+      if (!state.tokenContract || !state.stakingContract) {
+        throw new Error('먼저 지갑 연결 후 컨트랙트 설정을 확인해 주세요.');
+      }
+    }
+
+    function getAmountInWei() {
+      const raw = els.amount.value.trim();
+      if (!raw) throw new Error('Amount를 입력해 주세요.');
+      return ethers.parseUnits(raw, state.decimals);
+    }
+
+    function txLink(hash) {
+      const base = els.explorerBase.value.trim();
+      return base ? `${base}${hash}` : '';
+    }
+
+    function showLastTx(hash) {
+      const link = txLink(hash);
+      els.lastTxHash.innerHTML = link
+        ? `<a href="${link}" target="_blank" rel="noopener noreferrer">${shortAddress(hash)}</a>`
+        : shortAddress(hash);
+    }
+
+    async function initContracts() {
+      const tokenAddress = els.tokenAddress.value.trim();
+      const stakingAddress = els.stakingAddress.value.trim();
+      if (!ethers.isAddress(tokenAddress)) throw new Error('Token address가 올바르지 않습니다.');
+      if (!ethers.isAddress(stakingAddress)) throw new Error('Staking address가 올바르지 않습니다.');
+
+      const tokenAbi = parseAbi(els.tokenAbi.value, 'Token');
+      const stakingAbi = parseAbi(els.stakingAbi.value, 'Staking');
+
+      state.tokenContract = new ethers.Contract(tokenAddress, tokenAbi, state.signer);
+      state.stakingContract = new ethers.Contract(stakingAddress, stakingAbi, state.signer);
+
+      try {
+        const [decimals, symbol] = await Promise.all([
+          state.tokenContract.decimals(),
+          state.tokenContract.symbol()
+        ]);
+        state.decimals = Number(decimals);
+        state.symbol = symbol;
+      } catch {
+        state.decimals = 18;
+        state.symbol = 'TOKEN';
+      }
+
+      els.tokenInfo.textContent = `${state.symbol} / decimals ${state.decimals}`;
+    }
+
+    async function connectWallet() {
+      requireMetaMask();
+      setStatus('지갑 연결을 요청하는 중입니다...');
+      state.provider = new ethers.BrowserProvider(window.ethereum);
+      await state.provider.send('eth_requestAccounts', []);
+      state.signer = await state.provider.getSigner();
+      state.userAddress = await state.signer.getAddress();
+
+      const network = await state.provider.getNetwork();
+      els.walletAddress.textContent = shortAddress(state.userAddress);
+      els.networkName.textContent = `${network.name} (${network.chainId})`;
+
+      await initContracts();
+      await refreshBalances();
+      setStatus('지갑 연결이 완료되었습니다.', 'ok');
+    }
+
+    async function refreshBalances() {
+      requireContractsReady();
+      const [walletBal, stakedBal] = await Promise.all([
+        state.tokenContract.balanceOf(state.userAddress),
+        state.stakingContract.getStakedBalance(state.userAddress)
+      ]);
+      els.walletTokenBalance.textContent = `${ethers.formatUnits(walletBal, state.decimals)} ${state.symbol}`;
+      els.stakedBalance.textContent = `${ethers.formatUnits(stakedBal, state.decimals)} ${state.symbol}`;
+    }
+
+    async function approveTokens() {
+      requireContractsReady();
+      const amountWei = getAmountInWei();
+      const tx = await state.tokenContract.approve(els.stakingAddress.value.trim(), amountWei);
+      showLastTx(tx.hash);
+      setStatus(`Approve 전송 완료\nTx: ${tx.hash}\n채굴 대기 중입니다...`, 'warn');
+      await tx.wait();
+      setStatus('Approve가 완료되었습니다.', 'ok');
+      await refreshBalances();
+    }
+
+    async function stakeTokens() {
+      requireContractsReady();
+      const amountWei = getAmountInWei();
+      const tx = await state.stakingContract.stake(amountWei);
+      showLastTx(tx.hash);
+      setStatus(`Stake 전송 완료\nTx: ${tx.hash}\n채굴 대기 중입니다...`, 'warn');
+      await tx.wait();
+      setStatus('Stake가 완료되었습니다.', 'ok');
+      await refreshBalances();
+    }
+
+    async function withdrawTokens() {
+      requireContractsReady();
+      const amountWei = getAmountInWei();
+      const tx = await state.stakingContract.withdraw(amountWei);
+      showLastTx(tx.hash);
+      setStatus(`Withdraw 전송 완료\nTx: ${tx.hash}\n채굴 대기 중입니다...`, 'warn');
+      await tx.wait();
+      setStatus('Withdraw가 완료되었습니다.', 'ok');
+      await refreshBalances();
+    }
+
+    function normalizeError(err) {
+      const message = err?.shortMessage || err?.reason || err?.message || String(err);
+      return message.replace(/^Error:\s*/, '');
+    }
+
+    async function handleAction(fn) {
+      try { await fn(); }
+      catch (err) {
+        console.error(err);
+        setStatus(normalizeError(err), 'bad');
+      }
+    }
+
+    function bindEvents() {
+      els.saveConfigBtn.addEventListener('click', saveConfigToLocal);
+      els.connectBtn.addEventListener('click', () => handleAction(connectWallet));
+      els.approveBtn.addEventListener('click', () => handleAction(approveTokens));
+      els.stakeBtn.addEventListener('click', () => handleAction(stakeTokens));
+      els.withdrawBtn.addEventListener('click', () => handleAction(withdrawTokens));
+      els.refreshBtn.addEventListener('click', () => handleAction(refreshBalances));
+      if (window.ethereum) {
+        window.ethereum.on('accountsChanged', () => window.location.reload());
+        window.ethereum.on('chainChanged', () => window.location.reload());
+      }
+    }
+
+    loadConfigFromLocal();
+    bindEvents();
+  </script>
+</body>
+</html>

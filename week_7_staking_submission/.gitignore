@@ -1,0 +1,10 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Remix / local
+artifacts/
+cache/
+
+# Secrets
+.env
