@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>mKRW Pay | GIWA Stablecoin Payment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon">₩</div>
+        <div>
+          <p class="brand-name">mKRW Pay</p>
+          <p class="brand-desc">GIWA Sepolia · Nodit RPC</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button id="addGiwaBtn" class="btn btn-ghost">GIWA 네트워크 추가</button>
+        <button id="connectBtn" class="btn btn-primary">지갑 연결</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-text">
+        <p class="eyebrow">Stablecoin Payment DApp</p>
+        <h1>mKRW Cafe Pay on GIWA</h1>
+        <p class="hero-desc">
+          GIWA Sepolia 위에 배포한 나만의 스테이블코인과 결제 컨트랙트를 호출하는 프론트엔드입니다.
+          지갑 연결, 잔액 조회, 승인, 결제 흐름을 한 화면에서 확인할 수 있습니다.
+        </p>
+
+        <div class="hero-meta">
+          <div>
+            <span>Chain</span>
+            <strong>GIWA Sepolia</strong>
+          </div>
+          <div>
+            <span>Token</span>
+            <strong>mKRW</strong>
+          </div>
+          <div>
+            <span>Fee</span>
+            <strong>1%</strong>
+          </div>
+        </div>
+      </div>
+
+      <aside class="summary-card">
+        <div class="summary-top">
+          <div>
+            <span class="mini-label">Payment Preview</span>
+            <h2>카페 결제</h2>
+          </div>
+          <div class="coin">₩</div>
+        </div>
+
+        <div class="preview-amount">
+          <span>결제 금액</span>
+          <strong id="previewAmount">100.00 mKRW</strong>
+        </div>
+
+        <div class="receipt-lines">
+          <div>
+            <span>가맹점 정산</span>
+            <strong id="previewMerchant">99.00 mKRW</strong>
+          </div>
+          <div>
+            <span>수수료</span>
+            <strong id="previewFee">1.00 mKRW</strong>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="workspace">
+      <article class="panel">
+        <div class="panel-title">
+          <div>
+            <p>Configuration</p>
+            <h2>체인 연결 설정</h2>
+          </div>
+          <span>Nodit</span>
+        </div>
+
+        <label for="noditKey">Nodit API Key</label>
+        <div class="input-with-button">
+          <input id="noditKey" type="password" placeholder="API Key만 입력" />
+          <button id="toggleKeyBtn" class="small-btn">보기</button>
+        </div>
+
+        <label for="tokenAddress">StableCoin Contract</label>
+        <input id="tokenAddress" placeholder="0x..." />
+
+        <label for="paymentAddress">Payment Contract</label>
+        <input id="paymentAddress" placeholder="0x..." />
+
+        <button id="saveConfigBtn" class="btn btn-primary btn-wide">설정 저장</button>
+      </article>
+
+      <article class="panel wallet-panel">
+        <div class="panel-title">
+          <div>
+            <p>Wallet</p>
+            <h2>내 지갑 정보</h2>
+          </div>
+          <span id="networkBadge" class="badge-muted">Disconnected</span>
+        </div>
+
+        <div class="balance-box">
+          <span>mKRW Balance</span>
+          <strong id="balanceText">-</strong>
+        </div>
+
+        <div class="address-box">
+          <span>Connected Address</span>
+          <p id="accountText">지갑이 연결되지 않았습니다.</p>
+        </div>
+
+        <button id="refreshBtn" class="btn btn-soft btn-wide">잔액 새로고침</button>
+      </article>
+
+      <article class="panel pay-panel">
+        <div class="panel-title">
+          <div>
+            <p>Payment</p>
+            <h2>결제 실행</h2>
+          </div>
+          <span>Approve + Pay</span>
+        </div>
+
+        <label for="payAmount">결제 금액</label>
+        <div class="amount-box">
+          <input id="payAmount" type="number" min="0" step="0.01" value="100" />
+          <span>mKRW</span>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <b>1</b>
+            <p>Approve로 결제 컨트랙트에 토큰 사용 권한을 부여합니다.</p>
+          </div>
+          <div class="step">
+            <b>2</b>
+            <p>Pay Now로 결제 금액을 전송하고 가맹점에 정산합니다.</p>
+          </div>
+        </div>
+
+        <div class="pay-buttons">
+          <button id="approveBtn" class="btn btn-soft">Approve</button>
+          <button id="payBtn" class="btn btn-primary">Pay Now</button>
+        </div>
+      </article>
+
+      <article class="panel log-panel">
+        <div class="panel-title">
+          <div>
+            <p>Activity</p>
+            <h2>트랜잭션 로그</h2>
+          </div>
+          <button id="clearLogBtn" class="small-btn">초기화</button>
+        </div>
+
+        <div id="logBox" class="log-box">
+          <div class="log-line">
+            <span>System</span>
+            <p>DApp ready. 먼저 설정을 저장하고 지갑을 연결해 주세요.</p>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.15.0/dist/ethers.umd.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

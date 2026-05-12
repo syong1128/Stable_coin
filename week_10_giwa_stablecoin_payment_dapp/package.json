@@ -1,0 +1,19 @@
+{
+  "name": "giwa-stablecoin-payment-dapp",
+  "version": "1.0.0",
+  "description": "GIWA Sepolia + Nodit 기반 스테이블코인 결제 DApp 과제",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:giwa": "hardhat run scripts/deploy.js --network giwaSepolia",
+    "deploy:local": "hardhat run scripts/deploy.js --network hardhat"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "hardhat": "^2.27.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "dotenv": "^17.2.3"
+  }
+}
