@@ -1,0 +1,12 @@
+# Generated dependencies and Hardhat build cache
+node_modules/
+artifacts/
+cache/
+
+# Local OMX runtime state
+.omx/
+
+# Assignment evidence logs are deliverables for this package.
+# This overrides the parent repo's broad "*.log" ignore rule.
+!logs/
+!logs/*.log
