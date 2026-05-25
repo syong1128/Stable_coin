@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>ReceiptChain MCP · AI Smart Receipt DApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="site-shell">
+    <header class="nav">
+      <a class="brand" href="#">
+        <span class="brand-mark">RC</span>
+        <span>
+          <strong>ReceiptChain MCP</strong>
+          <small>mKRW Payment · MCP Tools · Ollama Receipt</small>
+        </span>
+      </a>
+
+      <nav class="nav-links" aria-label="주요 메뉴">
+        <a href="#payment">Payment</a>
+        <a href="#receipt">Receipt</a>
+        <a href="#mcp">MCP</a>
+        <a href="#activity">Log</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button id="addGiwaBtn" class="btn btn-secondary">GIWA 추가</button>
+        <button id="connectBtn" class="btn btn-primary">지갑 연결</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero-section">
+        <div class="hero-copy">
+          <p class="eyebrow">Term Project · Blockchain × MCP × Local LLM</p>
+          <h1>결제 기록을<br />읽히는 영수증으로 바꾸는 DApp</h1>
+          <p class="hero-desc">
+            mKRW 스테이블코인 결제 흐름 위에 MCP server와 Ollama 로컬 LLM을 연결했습니다.
+            결제 후 거래 해시, 상품, 수수료, 정산액을 tool로 분석하고 사용자가 바로 이해할 수 있는 AI 영수증을 생성합니다.
+          </p>
+
+          <div class="hero-buttons">
+            <a class="btn btn-primary" href="#payment">결제 시연 시작</a>
+            <a class="btn btn-ghost" href="#receipt">AI 영수증 보기</a>
+          </div>
+
+          <div class="stats-row">
+            <div>
+              <span>Network</span>
+              <strong>GIWA Sepolia</strong>
+            </div>
+            <div>
+              <span>Token</span>
+              <strong>mKRW</strong>
+            </div>
+            <div>
+              <span>MCP Tools</span>
+              <strong>3 Tools</strong>
+            </div>
+          </div>
+        </div>
+
+        <aside class="hero-dashboard" aria-label="결제 대시보드 미리보기">
+          <div class="dashboard-header">
+            <div>
+              <span class="panel-kicker">Live Preview</span>
+              <h2>Smart Receipt</h2>
+            </div>
+            <span class="status-pill">Local AI</span>
+          </div>
+
+          <div class="receipt-preview-card">
+            <div class="receipt-head">
+              <span>결제 예정 금액</span>
+              <strong id="previewAmount">350.00 mKRW</strong>
+            </div>
+
+            <div class="mini-chart" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+
+            <div class="receipt-preview-lines">
+              <div>
+                <span>가맹점 정산</span>
+                <strong id="previewMerchant">346.50 mKRW</strong>
+              </div>
+              <div>
+                <span>프로토콜 수수료</span>
+                <strong id="previewFee">3.50 mKRW</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-card">
+            <span>Flow</span>
+            <p>Wallet → Approve → Pay → Receipt → Ollama Summary</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="process-strip" aria-label="서비스 흐름">
+        <div>
+          <span>01</span>
+          <strong>Wallet</strong>
+          <p>MetaMask 연결</p>
+        </div>
+        <div>
+          <span>02</span>
+          <strong>Payment</strong>
+          <p>mKRW 결제</p>
+        </div>
+        <div>
+          <span>03</span>
+          <strong>Receipt</strong>
+          <p>결제 데이터 정리</p>
+        </div>
+        <div>
+          <span>04</span>
+          <strong>Ollama</strong>
+          <p>AI 요약 생성</p>
+        </div>
+      </section>
+
+      <section class="grid-section" id="payment">
+        <article class="card config-card">
+          <div class="card-heading">
+            <div>
+              <span class="panel-kicker">Configuration</span>
+              <h2>체인 설정</h2>
+            </div>
+            <span class="tag">Nodit RPC</span>
+          </div>
+
+          <label for="noditKey">Nodit API Key</label>
+          <div class="input-row">
+            <input id="noditKey" type="password" placeholder="API Key만 입력" />
+            <button id="toggleKeyBtn" class="icon-btn">보기</button>
+          </div>
+
+          <label for="tokenAddress">StableCoin Contract</label>
+          <input id="tokenAddress" placeholder="0x..." />
+
+          <label for="paymentAddress">Payment Contract</label>
+          <input id="paymentAddress" placeholder="0x..." />
+
+          <button id="saveConfigBtn" class="btn btn-primary btn-full">설정 저장</button>
+        </article>
+
+        <article class="card wallet-card">
+          <div class="card-heading">
+            <div>
+              <span class="panel-kicker">Wallet</span>
+              <h2>지갑 상태</h2>
+            </div>
+            <span id="networkBadge" class="tag tag-muted">Disconnected</span>
+          </div>
+
+          <div class="balance-card">
+            <span>mKRW Balance</span>
+            <strong id="balanceText">-</strong>
+          </div>
+
+          <div class="address-card">
+            <span>Connected Address</span>
+            <p id="accountText">지갑이 연결되지 않았습니다.</p>
+          </div>
+
+          <button id="refreshBtn" class="btn btn-dark btn-full">잔액 새로고침</button>
+        </article>
+
+        <article class="card pay-card">
+          <div class="card-heading">
+            <div>
+              <span class="panel-kicker">Checkout</span>
+              <h2>상품 결제</h2>
+            </div>
+            <span class="tag">Approve + Pay</span>
+          </div>
+
+          <div class="form-grid">
+            <div>
+              <label for="storeName">상점명</label>
+              <input id="storeName" value="KMU Campus Store" />
+            </div>
+
+            <div>
+              <label for="itemPreset">상품 선택</label>
+              <select id="itemPreset">
+                <option value="Americano|100|카페/식비">Americano · 100 mKRW</option>
+                <option value="Cafe Latte|120|카페/식비">Cafe Latte · 120 mKRW</option>
+                <option value="Sandwich Set|350|카페/식비" selected>Sandwich Set · 350 mKRW</option>
+                <option value="Convenience Snack|250|편의점/소매">Convenience Snack · 250 mKRW</option>
+                <option value="Bus Pass|50|교통">Bus Pass · 50 mKRW</option>
+                <option value="Course Textbook|500|교육">Course Textbook · 500 mKRW</option>
+                <option value="USB Cable|180|편의점/소매">USB Cable · 180 mKRW</option>
+                <option value="Printing Fee|80|교육">Printing Fee · 80 mKRW</option>
+                <option value="Custom|100|기타">Custom · 직접 수정</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="itemName">상품명</label>
+          <input id="itemName" value="Sandwich Set" />
+
+          <label for="payAmount">결제 금액</label>
+          <div class="amount-input">
+            <input id="payAmount" type="number" min="0" step="0.01" value="350" />
+            <span>mKRW</span>
+          </div>
+
+          <div class="button-pair">
+            <button id="approveBtn" class="btn btn-dark">Approve</button>
+            <button id="payBtn" class="btn btn-primary">Pay Now</button>
+          </div>
+        </article>
+
+        <article class="card receipt-card-main" id="receipt">
+          <div class="card-heading">
+            <div>
+              <span class="panel-kicker">Smart Receipt</span>
+              <h2>AI 영수증</h2>
+            </div>
+            <span class="tag">Ollama</span>
+          </div>
+
+          <div class="paper-receipt">
+            <div class="paper-top">
+              <strong>ReceiptChain AI</strong>
+              <span>Local Smart Receipt</span>
+            </div>
+
+            <div class="paper-line">
+              <span>상점</span>
+              <strong id="receiptStore">KMU Campus Store</strong>
+            </div>
+            <div class="paper-line">
+              <span>상품</span>
+              <strong id="receiptItems">Sandwich Set</strong>
+            </div>
+            <div class="paper-line">
+              <span>결제 금액</span>
+              <strong id="receiptAmount">350.00 mKRW</strong>
+            </div>
+            <div class="paper-line">
+              <span>수수료</span>
+              <strong id="receiptFee">3.50 mKRW</strong>
+            </div>
+            <div class="paper-line">
+              <span>정산액</span>
+              <strong id="receiptSettlement">346.50 mKRW</strong>
+            </div>
+            <div class="paper-line">
+              <span>거래 해시</span>
+              <strong id="receiptTx">결제 전</strong>
+            </div>
+          </div>
+
+          <button id="aiReceiptBtn" class="btn btn-primary btn-full">Ollama AI 영수증 생성</button>
+          <div id="aiResult" class="ai-result">결제 후 또는 미리보기 상태에서 AI 영수증을 생성할 수 있습니다.</div>
+        </article>
+      </section>
+
+      <section class="activity-section" id="mcp">
+        <article class="card log-card">
+          <div class="card-heading">
+            <div>
+              <span class="panel-kicker">MCP Tools</span>
+              <h2>MCP 검증 포인트</h2>
+            </div>
+            <span class="tag">list_tools + call_tool</span>
+          </div>
+
+          <div class="mcp-list">
+            <div>
+              <strong>get_mock_wallet_balance</strong>
+              <p>로컬 데이터셋에서 테스트 지갑의 mKRW 잔액을 조회합니다.</p>
+            </div>
+            <div>
+              <strong>analyze_transaction_hash</strong>
+              <p>거래 해시를 받아 결제 금액, 수수료, 정산액을 분석합니다.</p>
+            </div>
+            <div>
+              <strong>generate_smart_receipt</strong>
+              <p>결제 정보를 Ollama 기반 스마트 영수증 문장으로 변환합니다.</p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="activity-section" id="activity">
+        <article class="card log-card">
+          <div class="card-heading">
+            <div>
+              <span class="panel-kicker">Activity</span>
+              <h2>트랜잭션 로그</h2>
+            </div>
+            <button id="clearLogBtn" class="icon-btn">초기화</button>
+          </div>
+
+          <div id="logBox" class="log-box">
+            <div class="log-line">
+              <span>System</span>
+              <p>DApp ready. 먼저 설정을 저장하고 지갑을 연결해 주세요.</p>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.15.0/dist/ethers.umd.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

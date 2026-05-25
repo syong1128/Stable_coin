@@ -1,0 +1,21 @@
+{
+  "name": "ollama-ai-smart-receipt-dapp",
+  "version": "1.0.0",
+  "description": "GIWA Sepolia mKRW 결제 DApp을 Ollama 로컬 LLM 기반 AI 스마트 영수증으로 확장한 텀 프로젝트",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:giwa": "hardhat run scripts/deploy.js --network giwaSepolia",
+    "deploy:local": "hardhat run scripts/deploy.js --network hardhat",
+    "start": "node server.js",
+    "ollama:test": "node -e \"fetch('http://127.0.0.1:11434/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'qwen3:0.6b',prompt:'KMU Cafe 결제를 스마트 영수증으로 요약해줘.',stream:false})}).then(r=>r.json()).then(console.log).catch(console.error)\""
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "hardhat": "^2.27.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "dotenv": "^17.2.3"
+  }
+}
