@@ -130,7 +130,7 @@ python clients/upbit_mcp_client.py call get_recent_minute_candles market=KRW-BTC
 
 ---
 
-## 6. 제출 시 설명할 핵심 구조
+## 6. 핵심 구조
 
 ```text
 [MCP Client]
