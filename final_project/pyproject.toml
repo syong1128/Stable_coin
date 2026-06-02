@@ -1,0 +1,12 @@
+[project]
+name = "upbit-mcp-final-project"
+version = "1.0.0"
+description = "Final assignment: MCP server/client that retrieves Upbit price, orderbook, and market data"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.9.0",
+    "httpx>=0.27.0",
+]
+
+[tool.uv]
+package = false
